@@ -1,0 +1,18 @@
+# API Directory Configuration
+
+# Allow access to PHP files
+<FilesMatch "\.php$">
+    Order allow,deny
+    Allow from all
+</FilesMatch>
+
+# Deny access to config files
+<FilesMatch "^(config\.local\.php|config\.example\.php)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# CORS headers (if needed for subdomain)
+# Header set Access-Control-Allow-Origin "https://yourdomain.com"
+# Header set Access-Control-Allow-Methods "GET, OPTIONS"
+

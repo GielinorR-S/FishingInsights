@@ -1,0 +1,38 @@
+# API secrets
+api/config.local.php
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Node modules
+node_modules/
+app/node_modules/
+
+# Build outputs
+dist/
+app/dist/
+build/
+app/build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
