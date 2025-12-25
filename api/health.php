@@ -9,9 +9,18 @@ if (file_exists(__DIR__ . '/config.local.php')) {
     require_once __DIR__ . '/config.local.php';
 }
 require_once __DIR__ . '/lib/Database.php';
+require_once __DIR__ . '/lib/Cache.php';
 require_once __DIR__ . '/lib/utils.php';
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Opportunistic cache cleanup (health.php is infrequent, safe to always clean)
+try {
+    $cache = new Cache();
+    $cache->clearExpired();
+} catch (Exception $e) {
+    // Silently fail - cleanup is opportunistic, not critical
+}
 
 try {
     $timezone = defined('DEFAULT_TIMEZONE') ? DEFAULT_TIMEZONE : 'UTC';

@@ -40,21 +40,46 @@ try {
     $start = Validator::validateDate($_GET['start'] ?? null);
     
     if ($lat === false || $lng === false) {
-        sendError('Invalid latitude or longitude', 'VALIDATION_ERROR', [], 400);
+        sendError('Invalid latitude or longitude. Both are required.', 'VALIDATION_ERROR', [], 400);
+    }
+    
+    if ($days === false) {
+        sendError('Invalid days parameter. Must be between 1 and 14.', 'VALIDATION_ERROR', [], 400);
     }
     
     if ($start === false && isset($_GET['start'])) {
-        sendError('Invalid date format (use YYYY-MM-DD)', 'VALIDATION_ERROR', [], 400);
+        sendError('Invalid date format. Use YYYY-MM-DD (e.g., 2025-12-26).', 'VALIDATION_ERROR', [], 400);
     }
     
+    $timezone = defined('DEFAULT_TIMEZONE') ? DEFAULT_TIMEZONE : 'Australia/Melbourne';
+    
+    // Default start date to today in the specified timezone
     if ($start === false) {
-        $start = date('Y-m-d');
+        $dt = new DateTime('now', new DateTimeZone($timezone));
+        $start = $dt->format('Y-m-d');
     }
-
-    $timezone = defined('DEFAULT_TIMEZONE') ? DEFAULT_TIMEZONE : 'UTC';
+    
+    // Check for refresh bypass
+    $refresh = isset($_GET['refresh']) && ($_GET['refresh'] === 'true' || $_GET['refresh'] === '1');
+    
+    // Build cache key: lat|lng|start|days|timezone|rules_version
+    // rules_version: simple hash of species rules count (bumps when rules change)
+    $db = Database::getInstance()->getPdo();
+    $rulesCount = $db->query("SELECT COUNT(*) as count FROM species_rules")->fetch(PDO::FETCH_ASSOC)['count'];
+    $rulesVersion = (string)(int)$rulesCount; // Simple version based on rules count
+    $cacheKey = $lat . '|' . $lng . '|' . $start . '|' . $days . '|' . $timezone . '|' . $rulesVersion;
+    
+    // Check forecast-level cache (unless refresh requested)
+    if (!$refresh) {
+        $cache = new Cache();
+        $cachedResponse = $cache->get('forecast', $cacheKey);
+        if ($cachedResponse !== null) {
+            // Return cached response immediately
+            sendJson($cachedResponse);
+        }
+    }
     
     // Find nearest location using haversine distance (within 40km)
-    $db = Database::getInstance()->getPdo();
     $nearestLocation = findNearestLocation($db, $lat, $lng, 40);
     
     $locationName = 'Unknown Location';
@@ -68,6 +93,17 @@ try {
         $locationWarning = 'No nearby saved location; using coordinates only';
     }
 
+    // Opportunistic cache cleanup (probabilistic: ~5% of requests to avoid overhead)
+    // Only delete expired entries, safe to run in background
+    if (rand(1, 20) === 1) {
+        try {
+            $cache = new Cache();
+            $cache->clearExpired();
+        } catch (Exception $e) {
+            // Silently fail - cleanup is opportunistic, not critical
+        }
+    }
+    
     // Fetch data internally (not via HTTP)
     $weatherData = fetchWeatherData($lat, $lng, $start, $days, $timezone);
     $sunData = fetchSunData($lat, $lng, $start, $days, $timezone);
@@ -86,26 +122,58 @@ try {
         sendError('Failed to fetch required data', 'DATA_FETCH_ERROR', [], 503);
     }
 
+    // Build tides index by date for O(1) lookup (optimization: avoid O(n) search per day)
+    $tidesIndex = [];
+    if ($tidesData && isset($tidesData['tides']) && is_array($tidesData['tides'])) {
+        foreach ($tidesData['tides'] as $tideDay) {
+            if (isset($tideDay['date'])) {
+                $tidesIndex[$tideDay['date']] = $tideDay;
+            }
+        }
+    }
+
     // Build forecast array
     $forecast = [];
-    $currentMonth = (int)date('n');
+    
+    // Get current month in the specified timezone
+    $dtNow = new DateTime('now', new DateTimeZone($timezone));
+    $currentMonth = (int)$dtNow->format('n');
+    
+    // Load species rules once per request (optimization: avoid N+1 queries)
+    // This includes all columns needed for scoring, recommendations, and gear
+    $stmt = $db->prepare(
+        "SELECT species_id, common_name, preferred_tide_state, preferred_wind_max, preferred_conditions,
+                gear_bait, gear_lure, gear_line_weight, gear_leader, gear_rig
+         FROM species_rules 
+         WHERE (season_start_month <= ? AND season_end_month >= ?)
+         OR (season_start_month > season_end_month AND (season_start_month <= ? OR season_end_month >= ?))
+         ORDER BY species_id"
+    );
+    $stmt->execute([$currentMonth, $currentMonth, $currentMonth, $currentMonth]);
+    $allSpeciesRules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Build gear index by species_id for O(1) lookup
+    $gearIndex = [];
+    foreach ($allSpeciesRules as $rule) {
+        $gearIndex[$rule['species_id']] = $rule;
+    }
+    
+    // Parse start date in the specified timezone
+    $startDate = DateTime::createFromFormat('Y-m-d', $start, new DateTimeZone($timezone));
+    if ($startDate === false) {
+        sendError('Invalid start date', 'VALIDATION_ERROR', [], 400);
+    }
     
     for ($i = 0; $i < $days; $i++) {
-        $date = date('Y-m-d', strtotime($start . " +$i days"));
+        $dateObj = clone $startDate;
+        $dateObj->modify("+$i days");
+        $date = $dateObj->format('Y-m-d');
         
         $weather = $weatherData['forecast'][$i] ?? null;
         $sun = $sunData['times'][$i] ?? null;
-        $tides = null;
         
-        // Find tides for this date
-        if ($tidesData && isset($tidesData['tides']) && is_array($tidesData['tides'])) {
-            foreach ($tidesData['tides'] as $tideDay) {
-                if (isset($tideDay['date']) && $tideDay['date'] === $date) {
-                    $tides = $tideDay;
-                    break;
-                }
-            }
-        }
+        // O(1) lookup instead of O(n) linear search
+        $tides = isset($tidesIndex[$date]) ? $tidesIndex[$date] : null;
         
         // If no tides found for this date, generate mock tides for this day only
         if (!$tides || empty($tides['events'])) {
@@ -127,17 +195,17 @@ try {
         $weatherScore = Scoring::calculateWeatherScore($weather);
         $tideScore = $tides ? Scoring::calculateTideScore($tides) : 50; // Default if no tides
         $dawnDuskScore = $tides ? Scoring::calculateDawnDuskScore($sun, $tides) : 20;
-        $seasonalityScore = Scoring::calculateSeasonalityScore($db, $currentMonth);
+        $seasonalityScore = Scoring::calculateSeasonalityScore($allSpeciesRules);
         $score = Scoring::calculateScore($weatherScore, $tideScore, $dawnDuskScore, $seasonalityScore);
 
         // Calculate best bite windows
         $bestBiteWindows = calculateBestBiteWindows($sun, $tides);
 
-        // Get recommended species
-        $recommendedSpecies = getRecommendedSpecies($db, $currentMonth, $weather, $tides);
+        // Get recommended species (using cached rules)
+        $recommendedSpecies = getRecommendedSpecies($allSpeciesRules, $weather, $tides);
 
-        // Get gear suggestions (from top recommended species)
-        $gearSuggestions = getGearSuggestions($db, $recommendedSpecies);
+        // Get gear suggestions (from cached gear index)
+        $gearSuggestions = getGearSuggestions($gearIndex, $recommendedSpecies);
 
         // Generate reasons (always return 2-4 reasons)
         $reasons = generateReasons($weatherScore, $tideScore, $dawnDuskScore, $seasonalityScore, $weather, $tides, $sun, $tidesData);
@@ -174,7 +242,15 @@ try {
         $result['warning'] = $locationWarning;
     }
 
-    sendJson(['error' => false, 'data' => $result]);
+    // Build final response
+    $response = ['error' => false, 'data' => $result];
+    
+    // Cache forecast response (15 minutes TTL - shorter than individual provider caches)
+    $forecastTtl = defined('CACHE_TTL_FORECAST') ? CACHE_TTL_FORECAST : 900; // 15 minutes default
+    $cache = new Cache();
+    $cache->set('forecast', $cacheKey, $response, $forecastTtl);
+    
+    sendJson($response);
 
 } catch (Exception $e) {
     sendError('Internal server error', 'INTERNAL_ERROR', [
@@ -253,17 +329,9 @@ function calculateOverlap($start1, $end1, $start2, $end2) {
     return (int)(($overlapEnd->getTimestamp() - $overlapStart->getTimestamp()) / 60);
 }
 
-function getRecommendedSpecies($db, $currentMonth, $weather, $tides) {
-    // Get all species rules
-    $stmt = $db->prepare(
-        "SELECT species_id, common_name, preferred_tide_state, preferred_wind_max, preferred_conditions
-         FROM species_rules 
-         WHERE (season_start_month <= ? AND season_end_month >= ?)
-         OR (season_start_month > season_end_month AND (season_start_month <= ? OR season_end_month >= ?))
-         ORDER BY species_id"
-    );
-    $stmt->execute([$currentMonth, $currentMonth, $currentMonth, $currentMonth]);
-    $species = $stmt->fetchAll(PDO::FETCH_ASSOC);
+function getRecommendedSpecies($allSpeciesRules, $weather, $tides) {
+    // Use pre-loaded species rules (optimization: avoid query in loop)
+    $species = $allSpeciesRules;
 
     if (empty($species)) {
         return [];
@@ -342,7 +410,7 @@ function getRecommendedSpecies($db, $currentMonth, $weather, $tides) {
     return array_slice($result, 0, 3);
 }
 
-function getGearSuggestions($db, $species) {
+function getGearSuggestions($gearIndex, $species) {
     if (empty($species)) {
         return [
             'bait' => [],
@@ -353,13 +421,9 @@ function getGearSuggestions($db, $species) {
         ];
     }
 
-    // Get gear from top recommended species
-    $stmt = $db->prepare(
-        "SELECT gear_bait, gear_lure, gear_line_weight, gear_leader, gear_rig 
-         FROM species_rules WHERE species_id = ? LIMIT 1"
-    );
-    $stmt->execute([$species[0]['id']]);
-    $gear = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Get gear from cached gear index (optimization: avoid query in loop)
+    $speciesId = $species[0]['id'];
+    $gear = isset($gearIndex[$speciesId]) ? $gearIndex[$speciesId] : null;
 
     if ($gear) {
         $bait = $gear['gear_bait'] ? array_map('trim', explode(',', $gear['gear_bait'])) : [];

@@ -157,16 +157,11 @@ class Scoring {
     /**
      * Calculate seasonality score (0-100)
      * Simplified for MVP - checks if any species are in season
+     * @param array $allSpeciesRules Pre-loaded species rules array (optimization: avoid query in loop)
      */
-    public static function calculateSeasonalityScore($db, $currentMonth) {
-        $stmt = $db->prepare(
-            "SELECT COUNT(*) as count FROM species_rules 
-             WHERE (season_start_month <= ? AND season_end_month >= ?)
-             OR (season_start_month > season_end_month AND (season_start_month <= ? OR season_end_month >= ?))"
-        );
-        $stmt->execute([$currentMonth, $currentMonth, $currentMonth, $currentMonth]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $speciesCount = $row ? (int)$row['count'] : 0;
+    public static function calculateSeasonalityScore($allSpeciesRules) {
+        // Use pre-loaded rules instead of querying (optimization: avoid N+1 queries)
+        $speciesCount = is_array($allSpeciesRules) ? count($allSpeciesRules) : 0;
 
         // Score based on number of species in season (0-60 points)
         if ($speciesCount >= 5) {

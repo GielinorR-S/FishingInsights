@@ -48,6 +48,9 @@ if (!defined('CACHE_TTL_SUN')) {
 if (!defined('CACHE_TTL_TIDES')) {
     define('CACHE_TTL_TIDES', 43200);     // 12 hours
 }
+if (!defined('CACHE_TTL_FORECAST')) {
+    define('CACHE_TTL_FORECAST', 900);    // 15 minutes (forecast-level cache)
+}
 
 // Development mode (set to false in production)
 // Auto-detect local dev: PHP built-in server (cli-server) = local dev

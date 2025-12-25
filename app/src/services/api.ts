@@ -83,14 +83,32 @@ export interface ForecastResponse {
   }
 }
 
+/**
+ * Get today's date in Australia/Melbourne timezone (YYYY-MM-DD)
+ */
+function getTodayInMelbourne(): string {
+  const now = new Date()
+  // Convert to Australia/Melbourne timezone
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Australia/Melbourne',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  return formatter.format(now)
+}
+
 export async function getForecast(lat: number, lng: number, days: number = 7, start?: string): Promise<ForecastResponse> {
   const params = new URLSearchParams({
     lat: lat.toString(),
     lng: lng.toString(),
     days: days.toString()
   })
+  // If start not provided, use today in Australia/Melbourne
   if (start) {
     params.append('start', start)
+  } else {
+    params.append('start', getTodayInMelbourne())
   }
 
   const response = await fetch(`${API_BASE}/forecast.php?${params}`)

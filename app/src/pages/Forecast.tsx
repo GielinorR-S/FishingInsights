@@ -2,6 +2,20 @@ import { useEffect, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { getForecast, type ForecastResponse } from '../services/api'
 
+/**
+ * Get today's date in Australia/Melbourne timezone (YYYY-MM-DD)
+ */
+function getTodayInMelbourne(): string {
+  const now = new Date()
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Australia/Melbourne',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  return formatter.format(now)
+}
+
 function formatTime(isoString: string): string {
   try {
     const date = new Date(isoString)
@@ -32,9 +46,11 @@ export default function Forecast() {
   const [searchParams] = useSearchParams()
   const lat = searchParams.get('lat')
   const lng = searchParams.get('lng')
+  const startParam = searchParams.get('start')
   const [forecast, setForecast] = useState<ForecastResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedDate, setSelectedDate] = useState<string>(startParam || getTodayInMelbourne())
 
   useEffect(() => {
     if (!lat || !lng) {
@@ -47,7 +63,9 @@ export default function Forecast() {
       try {
         setLoading(true)
         setError(null)
-        const data = await getForecast(parseFloat(lat), parseFloat(lng), 7)
+        // Use selectedDate or today in Melbourne timezone
+        const startDate = selectedDate || getTodayInMelbourne()
+        const data = await getForecast(parseFloat(lat), parseFloat(lng), 7, startDate)
         setForecast(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load forecast')
@@ -57,7 +75,7 @@ export default function Forecast() {
     }
 
     fetchData()
-  }, [lat, lng])
+  }, [lat, lng, selectedDate])
 
   if (loading) {
     return (
@@ -102,13 +120,40 @@ export default function Forecast() {
 
   const { location, forecast: forecastDays } = forecast.data
 
+  // Get the actual start date from the forecast (first day's date)
+  const actualStartDate = forecastDays.length > 0 ? forecastDays[0].date : selectedDate
+  const startDateLabel = formatDate(actualStartDate)
+
   return (
     <div className="container mx-auto px-4 py-6 pb-20">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">{location.name}</h1>
-        {location.region && (
-          <p className="text-gray-600 text-sm mt-1">{location.region}</p>
-        )}
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-2xl font-bold">{location.name}</h1>
+            {location.region && (
+              <p className="text-gray-600 text-sm mt-1">{location.region}</p>
+            )}
+          </div>
+        </div>
+        
+        {/* Date Picker */}
+        <div className="mt-3 mb-3">
+          <label htmlFor="date-picker" className="block text-sm font-medium text-gray-700 mb-1">
+            Forecast Start Date
+          </label>
+          <input
+            id="date-picker"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            min={getTodayInMelbourne()}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Showing forecast from {startDateLabel}
+          </p>
+        </div>
+        
         {forecast.data.warning && (
           <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded p-2 text-sm text-yellow-800">
             {forecast.data.warning}

@@ -1,5 +1,12 @@
 # FishingInsights
 
+# run app PHP SERVER
+
+cd C:\Users\Cini9\Desktop\Portfolio-2026\FishingInsights
+php -S 127.0.0.1:8001
+
+# FRONTEND npm run dev
+
 A mobile-first Progressive Web App providing fishing forecasts for Victorian anglers.
 
 ## Tech Stack
@@ -40,6 +47,7 @@ npm run dev
 The database schema is created automatically on first run via `api/health.php`.
 
 To seed initial data (DEV_MODE only):
+
 1. Set `DEV_MODE = true` in `config.local.php`
 2. Visit `/api/seed.php` or run via CLI
 
@@ -48,11 +56,13 @@ To seed initial data (DEV_MODE only):
 ### Quick Start
 
 **Terminal 1 - Start PHP API Server (from repo root):**
+
 ```bash
 php -S 127.0.0.1:8001 -t .
 ```
 
 **Terminal 2 - Start Vite Dev Server:**
+
 ```bash
 cd app
 npm install
@@ -78,6 +88,7 @@ php scripts/smoke_test.php
 ```
 
 This will test:
+
 - Health endpoint returns `status: ok`
 - PDO SQLite extension is available
 - Forecast endpoint returns 7 days of data
@@ -90,15 +101,21 @@ This will test:
 - `GET /api/sun.php` - Sunrise/sunset (debugging)
 - `GET /api/tides.php` - Tides data (debugging)
 
-## Development
+## Documentation
 
-See `/docs` for complete documentation including:
-- Architecture specification
-- API contracts
-- Scoring model
-- Deployment guide
+See `/docs/README.md` for complete documentation index.
+
+**Quick Links:**
+
+- **Specifications** (`/docs/spec/`): Authoritative requirements, architecture, API contracts
+- **Analysis** (`/docs/analysis/`): Codebase analysis, performance reports, risk assessments
+
+**Start Here:**
+
+- `/docs/spec/DECISIONS-AND-MILESTONES.md` - Overview and implementation checklist
+- `/docs/spec/ARCHITECTURE.md` - Technical architecture and API endpoints
+- `/docs/spec/REQUIREMENTS.md` - Product requirements and user stories
 
 ## License
 
 MIT
-

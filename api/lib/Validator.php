@@ -75,17 +75,21 @@ class Validator {
             return false;
         }
 
-        $dateObj = DateTime::createFromFormat('Y-m-d', $date);
+        $timezone = defined('DEFAULT_TIMEZONE') ? DEFAULT_TIMEZONE : 'Australia/Melbourne';
+        $tz = new DateTimeZone($timezone);
+        
+        $dateObj = DateTime::createFromFormat('Y-m-d', $date, $tz);
         if ($dateObj === false) {
             return false;
         }
 
-        $today = new DateTime('today');
+        // Get today in the specified timezone
+        $today = new DateTime('today', $tz);
         $dateOnly = $dateObj->format('Y-m-d');
         $todayOnly = $today->format('Y-m-d');
 
         // Allow today, disallow past dates unless DEV_MODE
-        if (!$dateObj || $dateOnly < $todayOnly) {
+        if ($dateOnly < $todayOnly) {
             $devMode = defined('DEV_MODE') ? DEV_MODE : false;
             if (!$devMode) {
                 return false;
