@@ -53,9 +53,9 @@ try {
 
     $timezone = defined('DEFAULT_TIMEZONE') ? DEFAULT_TIMEZONE : 'UTC';
     
-    // Find nearest location using haversine distance
+    // Find nearest location using haversine distance (within 40km)
     $db = Database::getInstance()->getPdo();
-    $nearestLocation = findNearestLocation($db, $lat, $lng, 30);
+    $nearestLocation = findNearestLocation($db, $lat, $lng, 40);
     
     $locationName = 'Unknown Location';
     $locationRegion = null;

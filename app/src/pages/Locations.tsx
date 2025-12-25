@@ -1,15 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getLocations, type LocationsResponse } from '../services/api'
-
-interface Location {
-  id: number
-  name: string
-  region: string
-  lat: number
-  lng: number
-  timezone: string
-}
+import { getLocations, type LocationsResponse, extractLocations, type Location } from '../services/api'
 
 export default function Locations() {
   const [locations, setLocations] = useState<Location[]>([])
@@ -29,7 +20,7 @@ export default function Locations() {
       if (response.error) {
         setError('Failed to load locations')
       } else {
-        setLocations(response.data.locations)
+        setLocations(extractLocations(response))
       }
     } catch (err) {
       setError('Failed to load locations. Make sure the API server is running.')
@@ -43,7 +34,7 @@ export default function Locations() {
     if (!searchTerm) return true
     const search = searchTerm.toLowerCase()
     return loc.name.toLowerCase().includes(search) || 
-           loc.region.toLowerCase().includes(search)
+           (loc.region && loc.region.toLowerCase().includes(search))
   })
 
   return (
@@ -109,13 +100,15 @@ export default function Locations() {
             {filteredLocations.map((location) => (
               <Link
                 key={location.id}
-                to={`/forecast/${location.id}?lat=${location.lat}&lng=${location.lng}`}
+                to={`/forecast?lat=${location.lat}&lng=${location.lng}`}
                 className="card hover:shadow-lg transition-shadow"
               >
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-semibold text-lg">{location.name}</h3>
-                    <p className="text-gray-600 text-sm">{location.region}</p>
+                    {location.region && (
+                      <p className="text-gray-600 text-sm">{location.region}</p>
+                    )}
                   </div>
                   <svg
                     className="w-5 h-5 text-gray-400"

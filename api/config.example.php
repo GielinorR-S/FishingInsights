@@ -50,7 +50,9 @@ if (!defined('CACHE_TTL_TIDES')) {
 }
 
 // Development mode (set to false in production)
+// Auto-detect local dev: PHP built-in server (cli-server) = local dev
 if (!defined('DEV_MODE')) {
-    define('DEV_MODE', false);
+    $isLocalDev = (php_sapi_name() === 'cli-server');
+    define('DEV_MODE', $isLocalDev);
 }
 

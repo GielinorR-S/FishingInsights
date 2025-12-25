@@ -99,15 +99,10 @@ try {
     sendJson([
         'ok' => true,
         'seeded' => true,
-        'message' => 'Database seeded successfully',
+        'locations_count' => (int)$locationsAfter,
+        'species_rules_count' => (int)$speciesAfter,
         'locations_inserted' => (int)$locationsInserted,
         'species_rules_inserted' => (int)$speciesInserted,
-        'locations_before' => (int)$locationsBefore,
-        'locations_after' => (int)$locationsAfter,
-        'species_before' => (int)$speciesBefore,
-        'species_after' => (int)$speciesAfter,
-        'statements_executed' => $executed,
-        'errors' => $errors,
         'db_path' => $dbPathDisplay,
         'timestamp' => formatIso8601($dt),
         'timezone' => $timezone

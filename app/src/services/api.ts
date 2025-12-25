@@ -1,5 +1,13 @@
 const API_BASE = '/api'
 
+export interface Location {
+  id: number
+  name: string
+  region: string | null
+  lat: number
+  lng: number
+}
+
 export interface ForecastResponse {
   error: boolean
   data: {
@@ -138,5 +146,16 @@ export async function getLocations(search?: string, region?: string): Promise<Lo
     throw new Error(`Locations API error: ${response.status}`)
   }
   return response.json()
+}
+
+// Helper to extract Location[] from LocationsResponse
+export function extractLocations(response: LocationsResponse): Location[] {
+  return response.data.locations.map(loc => ({
+    id: loc.id,
+    name: loc.name,
+    region: loc.region || null,
+    lat: loc.lat,
+    lng: loc.lng
+  }))
 }
 

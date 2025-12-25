@@ -14,7 +14,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/locations" element={<Locations />} />
-            <Route path="/forecast/:locationId" element={<Forecast />} />
+            <Route path="/forecast" element={<Forecast />} />
             <Route path="/references" element={<References />} />
           </Routes>
           <BottomNav />
