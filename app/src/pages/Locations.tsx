@@ -38,27 +38,43 @@ export default function Locations() {
   })
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold">Select Location</h1>
+    <div className="container mx-auto px-4 py-6 pb-20">
+      <header className="page-header">
+        <h1 className="page-title">Select Location</h1>
+        <p className="page-subtitle">Choose a fishing location to view forecasts</p>
       </header>
 
       <div className="space-y-4">
-        <input
-          type="text"
-          placeholder="Search locations..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search locations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
 
         {loading && (
-          <p className="text-gray-600 text-center py-4">Loading locations...</p>
+          <div className="text-center py-8">
+            <div className="spinner mx-auto mb-3"></div>
+            <p className="text-gray-600 text-sm">Loading locations...</p>
+          </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 font-medium mb-2">{error}</p>
+          <div className="banner banner-error">
+            <p className="font-semibold mb-2">{error}</p>
             {locations.length === 0 && (
               <a
                 href="/api/seed.php"
@@ -73,9 +89,9 @@ export default function Locations() {
         )}
 
         {!loading && !error && filteredLocations.length === 0 && locations.length === 0 && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-yellow-800 font-medium mb-2">No locations found</p>
-            <p className="text-yellow-700 text-sm mb-3">
+          <div className="banner banner-warning text-center">
+            <p className="font-semibold mb-2">No locations found</p>
+            <p className="text-sm mb-3 opacity-90">
               The database appears to be empty. Seed the database with initial data.
             </p>
             <a
@@ -101,17 +117,17 @@ export default function Locations() {
               <Link
                 key={location.id}
                 to={`/forecast?lat=${location.lat}&lng=${location.lng}`}
-                className="card hover:shadow-lg transition-shadow"
+                className="card hover:shadow-md transition-all duration-200 hover:border-primary-300"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-lg">{location.name}</h3>
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base text-gray-900 mb-0.5">{location.name}</h3>
                     {location.region && (
-                      <p className="text-gray-600 text-sm">{location.region}</p>
+                      <p className="text-sm text-gray-500">{location.region}</p>
                     )}
                   </div>
                   <svg
-                    className="w-5 h-5 text-gray-400"
+                    className="w-5 h-5 text-gray-400 flex-shrink-0 ml-3"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

@@ -114,9 +114,17 @@ export default function Forecast() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 pb-20">
+        <div className="card mb-4">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+          </div>
+        </div>
         <div className="text-center py-8">
-          <p className="text-gray-600">Loading forecast...</p>
+          <div className="spinner mx-auto mb-3"></div>
+          <p className="text-gray-600 text-sm">Loading forecast...</p>
         </div>
       </div>
     )
@@ -144,19 +152,14 @@ export default function Forecast() {
   if (error === 'offline' && !forecast) {
     // Offline and no cached data
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 font-medium mb-2">
-            You're offline
-          </p>
-          <p className="text-yellow-700 text-sm mb-4">
+      <div className="container mx-auto px-4 py-6 pb-20">
+        <div className="banner banner-offline text-center">
+          <p className="font-semibold mb-2">You're offline</p>
+          <p className="text-sm mb-4 opacity-90">
             Connect to the internet to load a new forecast.
           </p>
           {navigator.onLine && (
-            <button
-              onClick={handleRetry}
-              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium"
-            >
+            <button onClick={handleRetry} className="btn-primary">
               Retry
             </button>
           )}
@@ -168,12 +171,12 @@ export default function Forecast() {
   if (error && error !== 'offline' && !forecast) {
     // Other error (not offline) and no data
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-800 font-medium mb-2">
+      <div className="container mx-auto px-4 py-6 pb-20">
+        <div className="banner banner-error text-center">
+          <p className="font-semibold mb-2">
             {error || 'Location coordinates are required'}
           </p>
-          <p className="text-red-700 text-sm mb-4">
+          <p className="text-sm mb-4 opacity-90">
             {!lat || !lng ? 'Please select a location to view the forecast.' : 'Failed to load forecast. Please try again.'}
           </p>
           {!lat || !lng ? (
@@ -181,10 +184,7 @@ export default function Forecast() {
               Browse Locations
             </Link>
           ) : (
-            <button
-              onClick={handleRetry}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium"
-            >
+            <button onClick={handleRetry} className="btn-primary">
               Retry
             </button>
           )}
@@ -195,12 +195,10 @@ export default function Forecast() {
 
   if (!lat || !lng) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <p className="text-red-800 font-medium mb-2">
-            Location coordinates are required
-          </p>
-          <p className="text-red-700 text-sm mb-4">
+      <div className="container mx-auto px-4 py-6 pb-20">
+        <div className="banner banner-error text-center">
+          <p className="font-semibold mb-2">Location coordinates are required</p>
+          <p className="text-sm mb-4 opacity-90">
             Please select a location to view the forecast.
           </p>
           <Link to="/locations" className="btn-primary inline-block">
@@ -213,9 +211,9 @@ export default function Forecast() {
 
   if (!forecast || !forecast.data) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-800 font-medium mb-2">No forecast data available</p>
+      <div className="container mx-auto px-4 py-6 pb-20">
+        <div className="banner banner-warning text-center">
+          <p className="font-semibold mb-2">No forecast data available</p>
           <Link to="/locations" className="btn-primary inline-block mt-2">
             Browse Locations
           </Link>
@@ -234,23 +232,24 @@ export default function Forecast() {
     <div className="container mx-auto px-4 py-6 pb-20">
       {/* Offline banner */}
       {isOffline && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-yellow-800 font-medium">
+        <div className="banner banner-offline mb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="badge badge-offline">Offline</span>
+                {isCachedData && <span className="badge badge-cached">Cached</span>}
+              </div>
+              <p className="font-medium text-sm">
                 {isCachedData ? 'Showing last saved forecast' : "You're offline"}
               </p>
-              <p className="text-yellow-700 text-sm mt-1">
+              <p className="text-xs mt-1 opacity-90">
                 {isCachedData 
                   ? 'Connect to the internet to load a new forecast.'
                   : 'Connect to the internet to load the forecast.'}
               </p>
             </div>
             {navigator.onLine && (
-              <button
-                onClick={handleRetry}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium"
-              >
+              <button onClick={handleRetry} className="btn-primary text-sm whitespace-nowrap">
                 Retry
               </button>
             )}
@@ -258,19 +257,19 @@ export default function Forecast() {
         </div>
       )}
 
-      <header className="mb-6">
-        <div className="flex items-center justify-between mb-2">
+      <header className="page-header">
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold">{location.name}</h1>
+            <h1 className="page-title">{location.name}</h1>
             {location.region && (
-              <p className="text-gray-600 text-sm mt-1">{location.region}</p>
+              <p className="page-subtitle">{location.region}</p>
             )}
           </div>
         </div>
         
         {/* Date Picker */}
-        <div className="mt-3 mb-3">
-          <label htmlFor="date-picker" className="block text-sm font-medium text-gray-700 mb-1">
+        <div className="mt-4">
+          <label htmlFor="date-picker" className="block text-xs font-medium text-gray-700 mb-2 uppercase tracking-wide">
             Forecast Start Date
           </label>
           <input
@@ -279,15 +278,15 @@ export default function Forecast() {
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             min={getTodayInMelbourne()}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           />
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-gray-500 mt-1.5">
             Showing forecast from {startDateLabel}
           </p>
         </div>
         
         {forecast.data.warning && (
-          <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded p-2 text-sm text-yellow-800">
+          <div className="mt-4 banner banner-warning text-sm">
             {forecast.data.warning}
           </div>
         )}
@@ -297,79 +296,79 @@ export default function Forecast() {
         {forecastDays.map((day, idx) => (
           <div key={idx} className="card">
             {/* Date and Score Header */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b border-gray-200">
               <div>
-                <h2 className="text-lg font-semibold">{formatDate(day.date)}</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-lg font-bold text-gray-900">{formatDate(day.date)}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">
                   {idx === 0 ? 'Today' : idx === 1 ? 'Tomorrow' : formatDate(day.date)}
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-blue-600">
+              <div className="flex items-baseline gap-1">
+                <span className="badge-score text-lg">
                   {Math.round(day.score)}
-                </div>
-                <div className="text-xs text-gray-500">/100</div>
+                </span>
+                <span className="text-xs text-gray-400 font-medium">/100</span>
               </div>
             </div>
 
             {/* Weather Conditions */}
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Conditions</h3>
+            <div className="mb-5">
+              <h3 className="section-heading">Conditions</h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <span className="text-gray-600">Temperature:</span>
-                  <span className="ml-2 font-medium">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">Temperature</div>
+                  <div className="font-semibold text-gray-900">
                     {day.weather.temperature_min}° - {day.weather.temperature_max}°
-                  </span>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Wind:</span>
-                  <span className="ml-2 font-medium">{day.weather.wind_speed} km/h</span>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">Wind</div>
+                  <div className="font-semibold text-gray-900">{day.weather.wind_speed} km/h</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Rain:</span>
-                  <span className="ml-2 font-medium">{day.weather.precipitation} mm</span>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">Rain</div>
+                  <div className="font-semibold text-gray-900">{day.weather.precipitation} mm</div>
                 </div>
-                <div>
-                  <span className="text-gray-600">Conditions:</span>
-                  <span className="ml-2 font-medium capitalize">{day.weather.conditions}</span>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-xs text-gray-500 mb-1">Sky</div>
+                  <div className="font-semibold text-gray-900 capitalize">{day.weather.conditions}</div>
                 </div>
               </div>
             </div>
 
             {/* Best Bite Windows */}
             {day.best_bite_windows && day.best_bite_windows.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Best Bite Windows</h3>
-                <div className="space-y-2">
+              <div className="mb-5">
+                <h3 className="section-heading">Best Bite Windows</h3>
+                <div className="space-y-2.5">
                   {day.best_bite_windows.map((window, wIdx) => (
                     <div
                       key={wIdx}
-                      className={`p-2 rounded text-sm ${
+                      className={`p-3 rounded-lg border ${
                         window.quality === 'excellent'
-                          ? 'bg-green-50 border border-green-200'
+                          ? 'bg-green-50 border-green-200'
                           : window.quality === 'good'
-                          ? 'bg-blue-50 border border-blue-200'
-                          : 'bg-gray-50 border border-gray-200'
+                          ? 'bg-blue-50 border-blue-200'
+                          : 'bg-gray-50 border-gray-200'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-semibold text-sm text-gray-900">
                           {formatTime(window.start)} - {formatTime(window.end)}
                         </span>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded ${
+                          className={`badge ${
                             window.quality === 'excellent'
-                              ? 'bg-green-200 text-green-800'
+                              ? 'badge-quality-excellent'
                               : window.quality === 'good'
-                              ? 'bg-blue-200 text-blue-800'
-                              : 'bg-gray-200 text-gray-800'
+                              ? 'badge-quality-good'
+                              : 'badge-quality-fair'
                           }`}
                         >
                           {window.quality}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600">{window.reason}</p>
+                      <p className="text-xs text-gray-600 leading-relaxed">{window.reason}</p>
                     </div>
                   ))}
                 </div>
@@ -378,19 +377,19 @@ export default function Forecast() {
 
             {/* Recommended Species */}
             {day.recommended_species && day.recommended_species.length > 0 && (
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Recommended Species</h3>
-                <div className="flex flex-wrap gap-2">
+              <div className="mb-5">
+                <h3 className="section-heading">Recommended Species</h3>
+                <div className="flex flex-wrap gap-2.5">
                   {day.recommended_species.map((species, sIdx) => (
                     <div
                       key={sIdx}
-                      className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm"
+                      className="bg-primary-50 border border-primary-200 rounded-lg px-3 py-2.5 flex-1 min-w-[140px]"
                     >
-                      <div className="font-medium text-blue-900">{species.name}</div>
-                      <div className="text-xs text-blue-700 mt-0.5">
+                      <div className="font-semibold text-primary-900 text-sm mb-1">{species.name}</div>
+                      <div className="text-xs text-primary-700 mb-1.5">
                         {Math.round(species.confidence * 100)}% confidence
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">{species.why}</div>
+                      <div className="text-xs text-gray-600 leading-relaxed">{species.why}</div>
                     </div>
                   ))}
                 </div>
@@ -399,41 +398,41 @@ export default function Forecast() {
 
             {/* Gear Suggestions */}
             {day.gear_suggestions && (
-              <div className="mb-2">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Gear Suggestions</h3>
-                <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-2">
+              <div>
+                <h3 className="section-heading">Gear Suggestions</h3>
+                <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-2.5">
                   {day.gear_suggestions.bait && day.gear_suggestions.bait.length > 0 && (
-                    <div>
-                      <span className="font-medium text-gray-700">Bait:</span>
-                      <span className="ml-2 text-gray-600">
+                    <div className="flex">
+                      <span className="font-semibold text-gray-700 w-16 flex-shrink-0">Bait:</span>
+                      <span className="text-gray-600 flex-1">
                         {day.gear_suggestions.bait.join(', ')}
                       </span>
                     </div>
                   )}
                   {day.gear_suggestions.lure && day.gear_suggestions.lure.length > 0 && (
-                    <div>
-                      <span className="font-medium text-gray-700">Lure:</span>
-                      <span className="ml-2 text-gray-600">
+                    <div className="flex">
+                      <span className="font-semibold text-gray-700 w-16 flex-shrink-0">Lure:</span>
+                      <span className="text-gray-600 flex-1">
                         {day.gear_suggestions.lure.join(', ')}
                       </span>
                     </div>
                   )}
                   {day.gear_suggestions.line_weight && (
-                    <div>
-                      <span className="font-medium text-gray-700">Line:</span>
-                      <span className="ml-2 text-gray-600">{day.gear_suggestions.line_weight}</span>
+                    <div className="flex">
+                      <span className="font-semibold text-gray-700 w-16 flex-shrink-0">Line:</span>
+                      <span className="text-gray-600 flex-1">{day.gear_suggestions.line_weight}</span>
                     </div>
                   )}
                   {day.gear_suggestions.leader && (
-                    <div>
-                      <span className="font-medium text-gray-700">Leader:</span>
-                      <span className="ml-2 text-gray-600">{day.gear_suggestions.leader}</span>
+                    <div className="flex">
+                      <span className="font-semibold text-gray-700 w-16 flex-shrink-0">Leader:</span>
+                      <span className="text-gray-600 flex-1">{day.gear_suggestions.leader}</span>
                     </div>
                   )}
                   {day.gear_suggestions.rig && (
-                    <div>
-                      <span className="font-medium text-gray-700">Rig:</span>
-                      <span className="ml-2 text-gray-600">{day.gear_suggestions.rig}</span>
+                    <div className="flex">
+                      <span className="font-semibold text-gray-700 w-16 flex-shrink-0">Rig:</span>
+                      <span className="text-gray-600 flex-1">{day.gear_suggestions.rig}</span>
                     </div>
                   )}
                 </div>
