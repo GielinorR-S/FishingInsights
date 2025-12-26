@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { getLocations, type LocationsResponse, extractLocations, type Location } from '../services/api'
+import { getLocations, type LocationsResponse, extractLocations, type Location, getApiBasePathForLinks } from '../services/api'
 
 export default function Locations() {
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-
   useEffect(() => {
     loadLocations()
   }, [])
@@ -77,7 +76,7 @@ export default function Locations() {
             <p className="font-semibold mb-2">{error}</p>
             {locations.length === 0 && (
               <a
-                href="/api/seed.php"
+                href={`${getApiBasePathForLinks()}/seed.php`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary inline-block mt-2"
@@ -95,7 +94,7 @@ export default function Locations() {
               The database appears to be empty. Seed the database with initial data.
             </p>
             <a
-              href="/api/seed.php"
+              href={`${getApiBasePathForLinks()}/seed.php`}
               target="_blank"
               rel="noopener noreferrer"
               className="btn-primary inline-block"

@@ -1,3 +1,7 @@
+// API Configuration
+// Frontend always uses /api/* paths
+// Vite dev proxy rewrites /api/* to strip /api and forward to PHP server
+// Production: /api/* paths are served directly by web server
 const API_BASE = '/api'
 
 export interface Location {
@@ -153,10 +157,12 @@ export interface LocationsResponse {
   }
 }
 
-export async function getLocations(search?: string, region?: string): Promise<LocationsResponse> {
+export async function getLocations(search?: string, region?: string, state?: string, q?: string): Promise<LocationsResponse> {
   const params = new URLSearchParams()
   if (search) params.append('search', search)
   if (region) params.append('region', region)
+  if (state) params.append('state', state)
+  if (q) params.append('q', q)
   
   const url = `${API_BASE}/locations.php${params.toString() ? '?' + params.toString() : ''}`
   const response = await fetch(url)
@@ -164,6 +170,15 @@ export async function getLocations(search?: string, region?: string): Promise<Lo
     throw new Error(`Locations API error: ${response.status}`)
   }
   return response.json()
+}
+
+/**
+ * Get the API base path for building URLs outside of API client functions
+ * (e.g., for href links in components)
+ * Always returns /api for consistency
+ */
+export function getApiBasePathForLinks(): string {
+  return API_BASE
 }
 
 // Helper to extract Location[] from LocationsResponse

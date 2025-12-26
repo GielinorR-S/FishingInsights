@@ -57,11 +57,18 @@ class Database {
                     longitude REAL NOT NULL,
                     timezone TEXT NOT NULL DEFAULT 'Australia/Melbourne',
                     description TEXT,
+                    state TEXT,
+                    type TEXT,
+                    access TEXT,
+                    notes TEXT,
+                    safety TEXT,
                     created_at TEXT NOT NULL DEFAULT (datetime('now')),
                     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
                 );
                 CREATE INDEX IF NOT EXISTS idx_locations_region ON locations(region);
                 CREATE INDEX IF NOT EXISTS idx_locations_coords ON locations(latitude, longitude);
+                CREATE INDEX IF NOT EXISTS idx_locations_state ON locations(state);
+                CREATE INDEX IF NOT EXISTS idx_locations_type ON locations(type);
             ",
             'species_rules' => "
                 CREATE TABLE IF NOT EXISTS species_rules (
@@ -130,6 +137,46 @@ class Database {
                     }
                 }
             }
+        }
+        
+        // Migrate existing locations table to add new columns if they don't exist
+        $this->migrateLocationsTable();
+    }
+    
+    /**
+     * Migrate locations table to add new columns (state, type, access, notes, safety)
+     * PHP 7.3 compatible - uses ALTER TABLE with IF NOT EXISTS workaround
+     */
+    private function migrateLocationsTable() {
+        $newColumns = ['state', 'type', 'access', 'notes', 'safety'];
+        
+        foreach ($newColumns as $column) {
+            // Check if column exists by trying to query it
+            try {
+                $this->pdo->query("SELECT $column FROM locations LIMIT 1");
+            } catch (PDOException $e) {
+                // Column doesn't exist, add it
+                try {
+                    $this->pdo->exec("ALTER TABLE locations ADD COLUMN $column TEXT");
+                } catch (PDOException $e2) {
+                    // Ignore if column already exists (race condition)
+                    if (strpos($e2->getMessage(), 'duplicate column') === false) {
+                        error_log("Failed to add column $column: " . $e2->getMessage());
+                    }
+                }
+            }
+        }
+        
+        // Add indexes for new columns if they don't exist
+        try {
+            $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_locations_state ON locations(state)");
+        } catch (PDOException $e) {
+            // Ignore if already exists
+        }
+        try {
+            $this->pdo->exec("CREATE INDEX IF NOT EXISTS idx_locations_type ON locations(type)");
+        } catch (PDOException $e) {
+            // Ignore if already exists
         }
     }
 

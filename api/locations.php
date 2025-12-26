@@ -39,10 +39,25 @@ try {
     }
     
     // Build query
-    $sql = "SELECT id, name, region, latitude, longitude, timezone, description FROM locations WHERE 1=1";
+    $sql = "SELECT id, name, region, latitude, longitude, timezone, description, state, type, access, notes, safety FROM locations WHERE 1=1";
     $params = [];
     
-    // Search filter
+    // State filter
+    if (isset($_GET['state']) && !empty($_GET['state'])) {
+        $sql .= " AND state = ?";
+        $params[] = strtoupper(trim($_GET['state']));
+    }
+    
+    // Search filter (q parameter for name/region/type search)
+    if (isset($_GET['q']) && !empty($_GET['q'])) {
+        $sql .= " AND (name LIKE ? OR region LIKE ? OR type LIKE ?)";
+        $searchTerm = '%' . $_GET['q'] . '%';
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+        $params[] = $searchTerm;
+    }
+    
+    // Legacy search filter (backward compatibility)
     if (isset($_GET['search']) && !empty($_GET['search'])) {
         $sql .= " AND (name LIKE ? OR region LIKE ?)";
         $searchTerm = '%' . $_GET['search'] . '%';
@@ -64,7 +79,7 @@ try {
     
     $locations = [];
     foreach ($rows as $row) {
-        $locations[] = [
+        $location = [
             'id' => (int)$row['id'],
             'name' => $row['name'],
             'region' => $row['region'],
@@ -72,6 +87,25 @@ try {
             'lng' => (float)$row['longitude'],
             'timezone' => $row['timezone'] ?: $timezone
         ];
+        
+        // Add optional fields if they exist
+        if (isset($row['state']) && $row['state'] !== null) {
+            $location['state'] = $row['state'];
+        }
+        if (isset($row['type']) && $row['type'] !== null) {
+            $location['type'] = $row['type'];
+        }
+        if (isset($row['access']) && $row['access'] !== null) {
+            $location['access'] = $row['access'];
+        }
+        if (isset($row['notes']) && $row['notes'] !== null) {
+            $location['notes'] = $row['notes'];
+        }
+        if (isset($row['safety']) && $row['safety'] !== null) {
+            $location['safety'] = $row['safety'];
+        }
+        
+        $locations[] = $location;
     }
     
     sendJson([

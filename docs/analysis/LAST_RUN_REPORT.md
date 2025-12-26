@@ -1,8 +1,8 @@
 # Last Run Report
 
 **Generated:** 2025-12-26  
-**Generated At:** 2025-12-26 01:59:23  
-**Status:** ✅ All checks passed
+**Generated At:** 2025-12-26 02:36:10  
+**Status:** ⚠️ Some checks failed
 
 ---
 
@@ -17,33 +17,39 @@ main
 ### Latest Commit Hash
 
 ```
-0710245ca6b6cbd57afab56b7bec1e84dc02e4d8
+a6caac5484d849a85c64992627f8b3d719b6244d
 ```
 
 ### Short Hash
 
 ```
-0710245
+a6caac5
 ```
 
 ### Working Directory Status
 
 ⚠️ **Dirty** - Uncommitted changes detected
 
+**Changed/Untracked Files:**
+
+- `??` `app/src/vite-env.d.ts`
+- `??` `data/locations.csv`
+- `??` `scripts/validate_locations_csv.php`
+
 ### Last 5 Commits
 
+- `a6caac5 - UI baseline: mobile-first layout, cards, banners, nav polish`
 - `0710245 - Update last run report`
 - `8b5acd5 - Fix scripts base URL/path (support / and /api) + update docs`
 - `c779f44 - PWA icons + maskable, offline UX, docs state update`
 - `cc21792 - API contract lock, golden sample, contract verification, perf + cache complete`
-- `aef3952 - Perf + cache optimisations, forecast cache, docs reorg, tests passing`
 
 ## 2. Test Results
 
 ### Contract Verification
 
-**Status:** ✅ PASS
-**Exit Code:** 0
+**Status:** ❌ FAIL
+**Exit Code:** 1
 
 **Output:**
 
@@ -55,36 +61,20 @@ Test 1: Load golden sample...
   PASS: Golden sample loaded
 
 Test 2: Fetch live response...
-  PASS: Live response fetched
-
-Test 3: Top-level structure...
-  PASS: error = false
-
-Test 4: Data object structure...
-  PASS: timezone = Australia/Melbourne
-
-Test 5: Forecast array length...
-  PASS: forecast length = 7
-
-Test 6: First date equals Melbourne today...
-  PASS: forecast[0].date = 2025-12-26 (Melbourne today)
-
-Test 7: Forecast day structure (first day)...
-  PASS: score in range 0-100 (84)
-
-Test 8: All days have required fields...
-  PASS: All 7 days have required fields and valid scores
+  FAIL: Connection failed
 
 ==========================================
-Summary: 27 passed, 0 failed
+Summary: 1 passed, 1 failed
 
-All contract checks passed!
+Errors:
+  - Could not connect to http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7
+
 ```
 
 ### Smoke Tests
 
-**Status:** ✅ PASS
-**Exit Code:** 0
+**Status:** ❌ FAIL
+**Exit Code:** 1
 
 **Output:**
 
@@ -92,36 +82,39 @@ All contract checks passed!
 FishingInsights Backend Smoke Test
 ====================================
 Base URL: http://127.0.0.1:8001
-Base Path: (root)
+Base Path: /api
 
 Test 1: Health Check...
-  PASS: status = ok
-  PASS: has_pdo_sqlite = true
-  PASS: can_write_db = true
+  FAIL: Could not connect
 
 Test 2: Forecast Endpoint...
-  PASS: forecast length = 7 days
-  PASS: forecast structure valid
-  Sample: Date = 2025-12-26, Score = 84
+  FAIL: Could not connect
 
 Test 3: API Contract Verification...
-  PASS: Contract verification passed
-  Summary: 27 passed, 0 failed
-  All contract checks passed!
+  FAIL: Contract verification failed
+  Summary: 1 passed, 1 failed
+  Errors:
+    - Could not connect to http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7
 
 ====================================
-Summary: 6 passed, 0 failed
+Summary: 0 passed, 3 failed
 
-All tests passed!
+Errors:
+  - Health check failed: Could not connect to http://127.0.0.1:8001/api/health.php
+  - Forecast check failed: Could not connect to http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7
+  - Contract verification failed (exit code: 1)
+
 ```
 
 ## 3. Summary
 
-**Overall Status:** ✅ All checks passed
+**Overall Status:** ⚠️ Some checks failed
 
 **Test Results:**
-- Contract Verification: ✅ PASS
-- Smoke Tests: ✅ PASS
+- Contract Verification: ❌ FAIL
+- Smoke Tests: ❌ FAIL
+
+**⚠️ Warning:** Some tests failed. Review the output above for details.
 
 ---
 

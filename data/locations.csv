@@ -1,0 +1,31 @@
+name,lat,lng,state,region,type,access,notes,safety
+Port Phillip Bay,-37.8500,144.9500,VIC,Melbourne,Bay,Public boat ramps and jetties,"Large bay with diverse fishing opportunities. Popular for snapper, whiting, and squid.",Check weather conditions before heading out
+Western Port,-38.3500,145.2500,VIC,Mornington Peninsula,Bay,Public boat ramps,"Productive bay fishing. Good for flathead and whiting.",Strong tides - check tide times
+Gippsland Lakes,-37.8000,147.6000,VIC,Gippsland,Estuary,Public boat ramps and jetties,"Estuary and lake fishing. Excellent for bream and flathead.",Shallow areas - watch for sandbars
+Corner Inlet,-38.7000,146.2000,VIC,Gippsland,Inlet,Public boat ramps,"Coastal inlet fishing. Good for whiting and flathead.",Remote location - ensure adequate supplies
+Portland,-38.3500,141.6000,VIC,South West,Coastal,Public boat ramps and rock platforms,"Deep sea and rock fishing. Popular for snapper and Australian salmon.",Rock fishing - wear life jacket
+Warrnambool,-38.3833,142.4833,VIC,South West,Coastal,Public beach access and boat ramps,"Coastal fishing. Good for Australian salmon and whiting.",Check surf conditions
+Apollo Bay,-38.7500,143.6667,VIC,Great Ocean Road,Surf,Public beach access,"Surf and rock fishing. Popular for Australian salmon.",Strong surf - experienced anglers only
+Lorne,-38.5333,143.9833,VIC,Great Ocean Road,Coastal,Public beach access,"Coastal fishing. Good for Australian salmon.",Check weather and surf conditions
+Torquay,-38.3333,144.3167,VIC,Great Ocean Road,Surf,Public beach access,"Surf fishing. Popular for Australian salmon.",Strong surf conditions
+Geelong,-38.1500,144.3500,VIC,Geelong,Bay,Public boat ramps and jetties,"Bay and estuary fishing. Good for snapper and whiting.",Check weather conditions
+Werribee River,-37.9000,144.6667,VIC,Melbourne,River,Public access points,"River fishing. Good for bream and mullet.",Urban location - check water quality
+Yarra River,-37.8167,144.9500,VIC,Melbourne,River,Public access points,"Urban river fishing. Popular for bream.",Urban location - check water quality advisories
+Maribyrnong River,-37.7833,144.9000,VIC,Melbourne,River,Public access points,"River fishing. Good for bream.",Urban location - check water quality
+Mornington Pier,-38.2167,145.0333,VIC,Mornington Peninsula,Pier,Public pier access,"Pier fishing. Popular for squid and whiting.",Crowded on weekends
+Rye Pier,-38.3667,144.8167,VIC,Mornington Peninsula,Pier,Public pier access,"Pier fishing. Good for squid and whiting.",Popular location - arrive early
+Sorrento Pier,-38.3333,144.7333,VIC,Mornington Peninsula,Pier,Public pier access,"Pier fishing. Popular for squid and snapper.",Crowded during peak season
+Lakes Entrance,-37.8833,147.9833,VIC,Gippsland,Estuary,Public boat ramps and jetties,"Estuary fishing. Excellent for bream and flathead.",Busy waterway - watch for boats
+Mallacoota,-37.5500,149.7500,VIC,Gippsland,Coastal,Public beach access and boat ramps,"Coastal and estuary fishing. Remote location with good fishing.",Remote - ensure adequate supplies and fuel
+Wilsons Promontory,-39.0333,146.3000,VIC,Gippsland,Coastal,Public access with park entry,"Remote coastal fishing. Requires park entry permit.",Remote location - check park conditions and permits
+San Remo,-38.5167,145.3667,VIC,Gippsland,Bridge,Public bridge access,"Bridge and coastal fishing. Popular for snapper and whiting.",Bridge fishing - watch for traffic
+Inverloch,-38.6333,145.7167,VIC,Gippsland,Estuary,Public boat ramps and beach access,"Estuary fishing. Good for whiting and flathead.",Check tide times for best access
+Venus Bay,-38.6833,145.8333,VIC,Gippsland,Surf,Public beach access,"Surf fishing. Popular for Australian salmon.",Strong surf - experienced anglers only
+Phillip Island,-38.4667,145.2333,VIC,Mornington Peninsula,Island,Public boat ramps and beach access,"Island fishing. Good for snapper and whiting.",Check ferry schedules if needed
+French Island,-38.3333,145.3333,VIC,Western Port,Island,Public boat access,"Island fishing. Remote location with good fishing opportunities.",Remote - requires boat access
+Portsea,-38.3167,144.7167,VIC,Mornington Peninsula,Coastal,Public beach access,"Coastal fishing. Popular for snapper and whiting.",Check weather conditions
+Queenscliff,-38.2667,144.6500,VIC,Geelong,Coastal,Public boat ramps and jetties,"Coastal fishing. Good for snapper and whiting.",Check weather and tide conditions
+Barwon Heads,-38.2833,144.5000,VIC,Geelong,Estuary,Public boat ramps and beach access,"Estuary fishing. Popular for bream and whiting.",Check tide times
+Point Lonsdale,-38.2833,144.6167,VIC,Geelong,Coastal,Public beach access,"Coastal fishing. Good for snapper and whiting.",Check weather conditions
+Port Fairy,-38.3833,142.2333,VIC,South West,Coastal,Public boat ramps and beach access,"Coastal fishing. Popular for Australian salmon and whiting.",Check weather conditions
+

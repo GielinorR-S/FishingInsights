@@ -6,6 +6,39 @@
 
 ---
 
+## NEW CHAT HANDOFF (copy/paste this into a new ChatGPT conversation)
+
+**Repo URL:** `https://github.com/GielinorR-S/FishingInsights.git`  
+**Current Branch:** `main`  
+**Latest Commit Hash:** `a6caac5484d849a85c64992627f8b3d719b6244d` (short: `a6caac5`)
+
+**Local Dev Commands:**
+```bash
+# Terminal 1 - PHP API Server (from repo root)
+php -S 127.0.0.1:8001 -t api
+
+# Terminal 2 - Vite Dev Server
+cd app && npm run dev
+```
+
+**Check Command:**
+```bash
+php scripts/run_checks_and_report.php
+```
+
+**Non-Negotiables:**
+- Australia/Melbourne timezone (all date/time calculations)
+- PHP 7.3 production compatibility (no PHP 7.4+ syntax)
+- API contract locked (see `docs/spec/API-CONTRACT.md`)
+
+**What Files to Upload to New Chat:**
+- `docs/spec/PROJECT-STATE.md` (this file)
+- `docs/analysis/LAST_RUN_REPORT.md` (latest test results)
+
+**Next Task to Run:** Locations CSV pipeline + filters (VIC)
+
+---
+
 ## Project Overview
 
 **FishingInsights** is a mobile-first Progressive Web App (PWA) providing fishing forecasts for Victorian anglers. The MVP is production-ready for web deployment and PWA-ready for Android TWA (Trusted Web Activity) after HTTPS configuration.
