@@ -51,6 +51,22 @@ export default function Forecast() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedDate, setSelectedDate] = useState<string>(startParam || getTodayInMelbourne())
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [isCachedData, setIsCachedData] = useState(false)
+
+  // Offline/online detection
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   useEffect(() => {
     if (!lat || !lng) {
@@ -63,12 +79,31 @@ export default function Forecast() {
       try {
         setLoading(true)
         setError(null)
+        setIsCachedData(false)
         // Use selectedDate or today in Melbourne timezone
         const startDate = selectedDate || getTodayInMelbourne()
         const data = await getForecast(parseFloat(lat), parseFloat(lng), 7, startDate)
         setForecast(data)
+        setIsCachedData(false) // Fresh data loaded
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load forecast')
+        // Check if error is due to network failure
+        const isNetworkError = err instanceof TypeError && 
+          (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))
+        
+        if (isNetworkError && !navigator.onLine) {
+          // Offline - keep existing forecast if available, show offline message
+          setIsOffline(true)
+          if (forecast) {
+            setIsCachedData(true) // Show cached data
+            setError(null) // Don't show error if we have cached data
+          } else {
+            setError('offline') // Special error code for offline
+          }
+        } else {
+          // Other error (API error, etc.)
+          setError(err instanceof Error ? err.message : 'Failed to load forecast')
+          setIsCachedData(false)
+        }
       } finally {
         setLoading(false)
       }
@@ -87,12 +122,83 @@ export default function Forecast() {
     )
   }
 
-  if (error || !lat || !lng) {
+  // Retry handler
+  const handleRetry = () => {
+    if (navigator.onLine) {
+      setIsOffline(false)
+      setError(null)
+      // Trigger refetch by updating a dependency
+      const startDate = selectedDate || getTodayInMelbourne()
+      getForecast(parseFloat(lat!), parseFloat(lng!), 7, startDate)
+        .then((data) => {
+          setForecast(data)
+          setIsCachedData(false)
+          setError(null)
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : 'Failed to load forecast')
+        })
+    }
+  }
+
+  if (error === 'offline' && !forecast) {
+    // Offline and no cached data
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+          <p className="text-yellow-800 font-medium mb-2">
+            You're offline
+          </p>
+          <p className="text-yellow-700 text-sm mb-4">
+            Connect to the internet to load a new forecast.
+          </p>
+          {navigator.onLine && (
+            <button
+              onClick={handleRetry}
+              className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (error && error !== 'offline' && !forecast) {
+    // Other error (not offline) and no data
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="text-red-800 font-medium mb-2">
             {error || 'Location coordinates are required'}
+          </p>
+          <p className="text-red-700 text-sm mb-4">
+            {!lat || !lng ? 'Please select a location to view the forecast.' : 'Failed to load forecast. Please try again.'}
+          </p>
+          {!lat || !lng ? (
+            <Link to="/locations" className="btn-primary inline-block">
+              Browse Locations
+            </Link>
+          ) : (
+            <button
+              onClick={handleRetry}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium"
+            >
+              Retry
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!lat || !lng) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <p className="text-red-800 font-medium mb-2">
+            Location coordinates are required
           </p>
           <p className="text-red-700 text-sm mb-4">
             Please select a location to view the forecast.
@@ -126,6 +232,32 @@ export default function Forecast() {
 
   return (
     <div className="container mx-auto px-4 py-6 pb-20">
+      {/* Offline banner */}
+      {isOffline && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-800 font-medium">
+                {isCachedData ? 'Showing last saved forecast' : "You're offline"}
+              </p>
+              <p className="text-yellow-700 text-sm mt-1">
+                {isCachedData 
+                  ? 'Connect to the internet to load a new forecast.'
+                  : 'Connect to the internet to load the forecast.'}
+              </p>
+            </div>
+            {navigator.onLine && (
+              <button
+                onClick={handleRetry}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm font-medium"
+              >
+                Retry
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div>
