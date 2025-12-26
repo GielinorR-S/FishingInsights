@@ -1,7 +1,8 @@
 # Last Run Report
 
 **Generated:** 2025-12-26  
-**Session Type:** Performance Optimizations & Documentation Reorganization
+**Generated At:** 2025-12-26 01:51:08  
+**Status:** ✅ All checks passed
 
 ---
 
@@ -16,202 +17,37 @@ main
 ### Latest Commit Hash
 
 ```
-5ceb1e0d7c03ff5ec1d34846b4eca74d3a3f8c13
+c779f4452cf5c91210820d1b24c2523ee624b684
 ```
 
-### Commits Created in This Session
+### Short Hash
 
-**None** - All changes are uncommitted (working directory modifications)
-
-**Previous commits in history:**
-
-- `5ceb1e0` - Day 1-3 baseline: API + seeded data + app running locally
-- `d17882d` - WIP: local dev baseline (API + PWA scaffold)
-
----
-
-## 2. Files Changed
-
-### API Contract Documentation (NEW)
-
-**`docs/spec/API-CONTRACT.md`** (new file)
-
-- Complete API contract specification for `/api/forecast.php`
-- Documents query parameters, response schema, error format, and invariants
-- Locks contract version 1.0 with explicit breaking change policy
-
-**`tests/golden/forecast.sample.json`** (new file)
-
-- Golden sample response from `/api/forecast.php?lat=-37.8&lng=144.9&days=7`
-- Exact JSON as returned by the API (no formatting changes)
-- Used as reference for contract verification
-
-**`scripts/verify_contract.php`** (new file)
-
-- Contract verification script (PHP 7.3 compatible)
-- Verifies required keys, types, score range, forecast length, date invariants
-- Exit code 0 on pass, non-zero on fail
-
-**`scripts/smoke_test.php`** (updated)
-
-- Added Test 3: API Contract Verification
-- Runs `verify_contract.php` and fails if contract verification fails
-
-### Previous Changes (from earlier session)
-
-### Backend (`/api`)
-
-**`api/forecast.php`** (150 lines changed)
-
-- Optimized tides lookup: Replaced O(n) linear search with O(1) date-indexed lookup
-- Removed N+1 queries: Load species rules once per request, reuse in-memory (21 queries → 1 query)
-- Added opportunistic cache cleanup: Probabilistic cleanup (~5% of requests)
-- Added forecast-level caching: Cache final JSON response with key `lat|lng|start|days|timezone|rules_version`
-- Added refresh bypass: `?refresh=true` or `?refresh=1` parameter to skip cache
-
-**`api/health.php`** (9 lines added)
-
-- Added opportunistic cache cleanup: Always runs on health check (infrequent endpoint)
-
-**`api/lib/Scoring.php`** (13 lines changed)
-
-- Modified `calculateSeasonalityScore()`: Now accepts pre-loaded species rules array instead of querying database
-- Changed signature from `calculateSeasonalityScore($db, $currentMonth)` to `calculateSeasonalityScore($allSpeciesRules)`
-
-**`api/lib/Validator.php`** (10 lines changed)
-
-- Updated `validateDate()`: Uses `Australia/Melbourne` timezone for "today" comparison
-- Improved timezone-aware date validation
-
-**`api/config.example.php`** (3 lines added)
-
-- Added `CACHE_TTL_FORECAST` constant: 900 seconds (15 minutes) for forecast-level cache TTL
-
-### Frontend (`/app`)
-
-**`app/src/pages/Forecast.tsx`** (57 lines changed)
-
-- Added date picker UI: Allows user to select forecast start date
-- Added date state management: Tracks selected date and refetches forecast on change
-- Improved date display: Shows actual start date label ("Showing forecast from...")
-- Uses `getTodayInMelbourne()` helper for default date
-
-**`app/src/services/api.ts`** (18 lines added)
-
-- Added `getTodayInMelbourne()` helper: Gets today's date in Australia/Melbourne timezone
-- Modified `getForecast()`: Always passes `start` parameter (defaults to today in Melbourne)
-- Ensures consistent date handling between frontend and backend
-
-### Documentation (`/docs`)
-
-**`docs/README.md`** (139 lines changed)
-
-- Complete rewrite: New documentation index with spec vs analysis categorization
-- Added structure explanation: Specification documents (authoritative) vs Analysis documents (informational)
-- Added quick start guides: For new developers, feature implementation, deployment, troubleshooting
-- Added documentation maintenance guidelines
-
-**`docs/analysis/CODEBASE-SCAN-REPORT.md`** (451 lines, new file)
-
-- Comprehensive scan of PHP version assumptions, date/timezone handling, cache logic, API responses
-- Documents all DEV vs PROD code paths
-
-**`docs/analysis/DATE-FIX-SUMMARY.md`** (118 lines, new file)
-
-- Documents date range fixes for forecast endpoint
-- Explains timezone handling corrections
-
-**`docs/analysis/PERFORMANCE-AND-SAFETY-ANALYSIS.md`** (385 lines, new file)
-
-- Identifies performance bottlenecks (N+1 queries, linear searches)
-- Documents API credit waste patterns
-- Lists error handling gaps
-- Identifies missing guards (null checks, bounds validation)
-
-**`docs/analysis/RISK-ASSESSMENT-REPORT.md`** (455 lines, new file)
-
-- Categorizes files by risk level (high-risk vs safe-to-change)
-- Documents implicit contracts between frontend and backend
-
-**`docs/analysis/STATE-REPORT.md`** (457 lines, new file)
-
-- Documents current server setup, URLs, routing
-- Single source of truth for development environment
-
-**Documentation reorganization:**
-
-- Moved 8 specification files from `/docs` to `/docs/spec/` with uppercase, hyphenated names:
-  - `ARCHITECTURE.md`
-  - `DATA-SOURCES-AND-ATTRIBUTION.md`
-  - `DATABASE-SCHEMA.md`
-  - `DECISIONS-AND-MILESTONES.md`
-  - `DEPLOYMENT.md`
-  - `REQUIREMENTS.md`
-  - `RISK-REGISTER.md`
-  - `SCORING-MODEL.md`
-
-### Tests (`/scripts`)
-
-**`scripts/test_forecast_dates.php`** (130 lines, new file)
-
-- Test script for forecast date range validation
-- Verifies default start date is today in Melbourne timezone
-- Tests explicit start date parameter
-
-### Root
-
-**`README.md`** (31 lines changed)
-
-- Updated documentation section: Points to `/docs/README.md` for complete documentation index
-- Added quick links to specification and analysis documents
-
----
-
-## 3. Contract Safety
-
-### `/api/forecast.php` Response Shape Unchanged
-
-**YES** ✅
-
-- Response structure: `{ error: false, data: { location, timezone, forecast[], cached, cached_at, warning? } }`
-- All existing fields preserved: `cached`, `cached_at` fields remain unchanged
-- No new fields added to response schema
-- Forecast array structure unchanged: Each day has `date`, `score`, `weather`, `sun`, `tides`, `best_bite_windows`, `recommended_species`, `gear_suggestions`, `reasons`
-
-### `forecast[0].date` Still Melbourne Today
-
-**YES** ✅
-
-- Default start date calculation uses `DateTime('now', new DateTimeZone('Australia/Melbourne'))`
-- Date validation uses Melbourne timezone for "today" comparison
-- Frontend explicitly passes today's date in Melbourne timezone
-- Verified in tests: First date consistently `2025-12-26` (Melbourne today)
-
-### PHP 7.3 Compatible
-
-**YES** ✅
-
-- No PHP 7.4+ syntax used:
-  - No arrow functions (`fn()`)
-  - No typed properties
-  - No null coalescing assignment (`??=`)
-  - No union types
-  - No match expressions
-- All code uses PHP 7.3.33 compatible syntax
-- Prepared statements used for all database queries
-- Array syntax compatible with PHP 7.3
-
----
-
-## 4. Tests Run + Outputs
-
-### Contract Verification Test
-
-**Command:**
-
-```bash
-php scripts/verify_contract.php
 ```
+c779f44
+```
+
+### Working Directory Status
+
+⚠️ **Dirty** - Uncommitted changes detected
+
+**Changed/Untracked Files:**
+
+- `??` `scripts/run_checks_and_report.php`
+
+### Last 5 Commits
+
+- `c779f44 - PWA icons + maskable, offline UX, docs state update`
+- `cc21792 - API contract lock, golden sample, contract verification, perf + cache complete`
+- `aef3952 - Perf + cache optimisations, forecast cache, docs reorg, tests passing`
+- `5ceb1e0 - Day 1-3 baseline: API + seeded data + app running locally`
+- `d17882d - WIP: local dev baseline (API + PWA scaffold)`
+
+## 2. Test Results
+
+### Contract Verification
+
+**Status:** ✅ PASS
+**Exit Code:** 0
 
 **Output:**
 
@@ -249,19 +85,18 @@ Summary: 27 passed, 0 failed
 All contract checks passed!
 ```
 
-### Updated Smoke Test (with Contract Verification)
+### Smoke Tests
 
-**Command:**
-
-```bash
-php scripts/smoke_test.php
-```
+**Status:** ✅ PASS
+**Exit Code:** 0
 
 **Output:**
 
 ```
 FishingInsights Backend Smoke Test
 ====================================
+Base URL: http://127.0.0.1:8001
+Base Path: (root)
 
 Test 1: Health Check...
   PASS: status = ok
@@ -284,455 +119,15 @@ Summary: 6 passed, 0 failed
 All tests passed!
 ```
 
-### Previous Tests (from earlier session)
+## 3. Summary
 
-### Smoke Test
+**Overall Status:** ✅ All checks passed
 
-**Command:**
-
-```bash
-php scripts/smoke_test.php
-```
-
-**Output:**
-
-```
-FishingInsights Backend Smoke Test
-====================================
-
-Test 1: Health Check...
-  PASS: status = ok
-  PASS: has_pdo_sqlite = true
-  PASS: can_write_db = true
-
-Test 2: Forecast Endpoint...
-  PASS: forecast length = 7 days
-  PASS: forecast structure valid
-  Sample: Date = 2025-12-26, Score = 84
-
-====================================
-Summary: 5 passed, 0 failed
-
-All tests passed!
-```
-
-### Health Endpoint
-
-**Command:**
-
-```powershell
-$response = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/health.php" -UseBasicParsing; Write-Host $response.Content
-```
-
-**Output:**
-
-```json
-{
-  "status": "ok",
-  "php_version": "8.2.12",
-  "has_pdo": true,
-  "has_pdo_sqlite": true,
-  "sqlite_db_path": "[redacted]",
-  "can_write_db": true,
-  "can_write_cache": true,
-  "timestamp": "2025-12-26T10:49:08+11:00",
-  "timezone": "Australia/Melbourne"
-}
-```
-
-### Forecast Endpoint - Basic Test
-
-**Command:**
-
-```powershell
-$response = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7" -UseBasicParsing; $json = $response.Content | ConvertFrom-Json; Write-Host "Error: $($json.error)"; Write-Host "Forecast count: $($json.data.forecast.Count)"; Write-Host "First date: $($json.data.forecast[0].date)"; Write-Host "First score: $($json.data.forecast[0].score)"
-```
-
-**Output:**
-
-```
-Error: False
-Forecast count: 7
-First date: 2025-12-26
-First score: 84
-```
-
-### Forecast Endpoint - Cache Hit/Miss Test
-
-**Command:**
-
-```powershell
-$r1 = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7" -UseBasicParsing; $j1 = $r1.Content | ConvertFrom-Json; Write-Host "Request 1 (cache miss): Score=$($j1.data.forecast[0].score), Date=$($j1.data.forecast[0].date)"; Start-Sleep -Milliseconds 500; $r2 = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7" -UseBasicParsing; $j2 = $r2.Content | ConvertFrom-Json; Write-Host "Request 2 (cache hit): Score=$($j2.data.forecast[0].score), Date=$($j2.data.forecast[0].date)"; Write-Host "Cache working: $($j1.data.forecast[0].score -eq $j2.data.forecast[0].score)"
-```
-
-**Output:**
-
-```
-Request 1 (cache miss): Score=84, Date=2025-12-26
-Request 2 (cache hit): Score=84, Date=2025-12-26
-Cache working: True
-```
-
-### Forecast Endpoint - Refresh Bypass Test
-
-**Command:**
-
-```powershell
-$r3 = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7&refresh=1" -UseBasicParsing; $j3 = $r3.Content | ConvertFrom-Json; Write-Host "Request 3 (refresh=1): Score=$($j3.data.forecast[0].score), Date=$($j3.data.forecast[0].date)"; Write-Host "Refresh bypass working: Response structure valid"
-```
-
-**Output:**
-
-```
-Request 3 (refresh=1): Score=84, Date=2025-12-26
-Refresh bypass working: Response structure valid
-```
-
-### Forecast Endpoint - Response Structure Verification
-
-**Command:**
-
-```powershell
-$r = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7" -UseBasicParsing; $j = $r.Content | ConvertFrom-Json; Write-Host "Response structure check:"; Write-Host "  Has 'error' field: $($j.PSObject.Properties.Name -contains 'error')"; Write-Host "  Has 'data' field: $($j.PSObject.Properties.Name -contains 'data')"; Write-Host "  Has 'cached' in data: $($j.data.PSObject.Properties.Name -contains 'cached')"; Write-Host "  Has 'cached_at' in data: $($j.data.PSObject.Properties.Name -contains 'cached_at')"; Write-Host "  Has 'forecast' array: $($j.data.PSObject.Properties.Name -contains 'forecast')"; Write-Host "  Forecast count: $($j.data.forecast.Count)"
-```
-
-**Output:**
-
-```
-Response structure check:
-  Has 'error' field: True
-  Has 'data' field: True
-  Has 'cached' in data: True
-  Has 'cached_at' in data: True
-  Has 'forecast' array: True
-  Forecast count: 7
-```
-
-### Forecast Endpoint - All Days Verification
-
-**Command:**
-
-```powershell
-$response = Invoke-WebRequest -Uri "http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7" -UseBasicParsing; $json = $response.Content | ConvertFrom-Json; Write-Host "All 7 days have scores:"; for ($i = 0; $i -lt 7; $i++) { Write-Host "  Day $($i+1): Score=$($json.data.forecast[$i].score), Species=$($json.data.forecast[$i].recommended_species.Count), Gear=$($json.data.forecast[$i].gear_suggestions.line_weight)" }
-```
-
-**Output:**
-
-```
-All 7 days have scores:
-  Day 1: Score=84, Species=3, Gear=8-15lb
-  Day 2: Score=81, Species=3, Gear=4-8lb
-  Day 3: Score=76, Species=3, Gear=4-8lb
-  Day 4: Score=74, Species=3, Gear=4-8lb
-  Day 5: Score=78, Species=3, Gear=4-8lb
-  Day 6: Score=76, Species=3, Gear=6-10lb
-  Day 7: Score=85, Species=3, Gear=6-10lb
-```
+**Test Results:**
+- Contract Verification: ✅ PASS
+- Smoke Tests: ✅ PASS
 
 ---
 
-## 5. PWA Readiness Audit for Android TWA
-
-### Audit Date
-
-2025-12-26
-
-### Commands Used
-
-```bash
-# Build app to generate PWA files
-cd app
-npm run build
-
-# Check for generated files (PowerShell)
-Test-Path "app\dist\manifest.webmanifest"
-Test-Path "app\dist\sw.js"
-Test-Path "app\dist\registerSW.js"
-
-# Check for icon files
-Test-Path "app\public\pwa-192x192.png"
-Test-Path "app\public\pwa-512x512.png"
-```
-
-### Findings Summary
-
-#### ✅ **PASS Items**
-
-- Manifest exists and is valid (generated by vite-plugin-pwa)
-- All required manifest fields present (name, short_name, start_url, display, theme_color, background_color)
-- Manifest linked in HTML (auto-injected)
-- Service worker generated (sw.js)
-- Service worker registered (registerSW.js auto-injected)
-- App shell caching configured (precaching via Workbox)
-- Runtime API caching configured (NetworkFirst strategy)
-
-#### ✅ **FIXED Items**
-
-1. **✅ PWA Icons Created**
-
-   - `app/public/pwa-192x192.png` - CREATED
-   - `app/public/pwa-512x512.png` - CREATED
-   - `app/public/pwa-512x512-maskable.png` - CREATED
-   - Icons generated using `app/scripts/generate-icons.js` script
-   - Icons copied to `dist/` on build
-   - **Status:** Icons present and included in manifest
-
-2. **✅ Maskable Icon Added**
-
-   - `pwa-512x512-maskable.png` added to manifest with `purpose: "maskable"`
-   - Maskable icon has safe zone (inner 80% of icon) for Android adaptive icons
-   - **Status:** Maskable icon configured correctly
-
-3. **✅ Offline Error Handling Implemented**
-
-   - `app/src/pages/Forecast.tsx` detects offline state using `navigator.onLine` and event listeners
-   - Shows friendly "You're offline" banner when offline
-   - Displays "Showing last saved forecast" when cached data is available
-   - Provides Retry button when connection is restored
-   - **Status:** Offline UX improved
-
-#### ⚠️ **REMAINING Items**
-
-4. **HTTPS Required for Production**
-   - Service workers require HTTPS (or localhost)
-   - Android TWA requires HTTPS for production
-   - **Impact:** Cannot deploy TWA without HTTPS certificate
-   - **Status:** Documented, must be configured in production deployment
-
-### Detailed Findings
-
-**Manifest Status:**
-
-- ✅ Generated: `app/dist/manifest.webmanifest`
-- ✅ Valid JSON structure
-- ✅ All required fields present
-- ⚠️ Icons referenced but files missing
-
-**Service Worker Status:**
-
-- ✅ Generated: `app/dist/sw.js`
-- ✅ Registration script: `app/dist/registerSW.js`
-- ✅ Auto-registered in built HTML
-- ✅ Runtime caching configured for `/api/*` routes
-
-**Offline Behavior:**
-
-- ✅ App shell precached (JS, CSS, HTML)
-- ✅ Offline-specific error messages implemented
-- ✅ Cached data display with "Showing last saved forecast" label
-- ✅ Retry button when connection restored
-- ⚠️ API caching may be empty on first offline visit (expected behavior)
-
-**Icon Files:**
-
-- ✅ `app/public/pwa-192x192.png` - CREATED
-- ✅ `app/public/pwa-512x512.png` - CREATED
-- ✅ `app/public/pwa-512x512-maskable.png` - CREATED
-- ✅ Maskable icon defined in manifest with `purpose: "maskable"`
-
-### Test Results
-
-**Build Output:**
-
-```
-✓ built in 2.75s
-PWA v0.17.5
-mode      generateSW
-precache  6 entries (189.24 KiB)
-files generated
-  dist\sw.js
-  dist\workbox-4618a956.js
-```
-
-**Generated Files:**
-
-- ✅ `dist/manifest.webmanifest` - Generated
-- ✅ `dist/sw.js` - Generated
-- ✅ `dist/registerSW.js` - Generated
-- ✅ `dist/index.html` - Contains manifest link and SW registration
-
-**Missing Files:**
-
-- ❌ `public/pwa-192x192.png` - Missing
-- ❌ `public/pwa-512x512.png` - Missing
-
-### Files Changed (PWA Fixes)
-
-**`app/public/pwa-192x192.png`** (NEW)
-
-- 192x192 pixel icon with "FI" text on blue background (#0ea5e9)
-- Generated using `app/scripts/generate-icons.js`
-
-**`app/public/pwa-512x512.png`** (NEW)
-
-- 512x512 pixel icon with "FI" text on blue background (#0ea5e9)
-- Generated using `app/scripts/generate-icons.js`
-
-**`app/public/pwa-512x512-maskable.png`** (NEW)
-
-- 512x512 pixel maskable icon with safe zone (inner 80%)
-- Generated using `app/scripts/generate-icons.js`
-
-**`app/vite.config.ts`** (UPDATED)
-
-- Added maskable icon to manifest: `{ src: "pwa-512x512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" }`
-
-**`app/src/pages/Forecast.tsx`** (UPDATED)
-
-- Added offline state detection: `isOffline` and `isCachedData` state
-- Added online/offline event listeners
-- Added network error detection in fetch catch block
-- Added offline banner with friendly message
-- Added "Showing last saved forecast" label for cached data
-- Added Retry button handler
-
-**`app/scripts/generate-icons.js`** (NEW)
-
-- Icon generation script using sharp library
-- Generates 192x192, 512x512, and 512x512-maskable icons
-- Uses SVG-to-PNG conversion with "FI" text on blue background
-
-**`app/package.json`** (UPDATED)
-
-- Added `sharp` as devDependency for icon generation
-
-### Commands Run (PWA Fixes)
-
-```bash
-# Install sharp for icon generation
-cd app
-npm install --save-dev sharp
-
-# Generate icons
-node scripts/generate-icons.js
-
-# Build app to verify manifest includes icons
-npm run build
-
-# Verify icons exist
-Test-Path "app\public\pwa-192x192.png"
-Test-Path "app\public\pwa-512x512.png"
-Test-Path "app\public\pwa-512x512-maskable.png"
-```
-
-### Build Output (After Fixes)
-
-```
-✓ built in 3.50s
-PWA v0.17.5
-mode      generateSW
-precache  12 entries (208.29 KiB)
-files generated
-  dist\sw.js
-  dist\workbox-4618a956.js
-```
-
-**Note:** Precached entries increased from 6 to 12 (includes icon files).
-
-### Verification Results
-
-**Icons:**
-
-- ✅ `app/public/pwa-192x192.png` - EXISTS
-- ✅ `app/public/pwa-512x512.png` - EXISTS
-- ✅ `app/public/pwa-512x512-maskable.png` - EXISTS
-
-**Manifest:**
-
-- ✅ Icons included in `dist/manifest.webmanifest`
-- ✅ Maskable icon has `purpose: "maskable"` property
-
-**Offline UX:**
-
-- ✅ Offline detection working (navigator.onLine + event listeners)
-- ✅ Friendly offline message displayed
-- ✅ Cached data labeled as "Showing last saved forecast"
-- ✅ Retry button functional
-
-### Remaining Items
-
-1. **HTTPS in Production** - Must deploy with HTTPS certificate for TWA
-2. **Test Offline Behavior** - Verify in browser DevTools (Network > Offline)
-
-### Full Audit Report
-
-See `docs/spec/PWA-REQUIREMENTS.md` for complete audit details.
-
----
-
-## 6. Project State Snapshot Created
-
-**Date:** 2025-12-26
-
-**File Created:** `docs/spec/PROJECT-STATE.md`
-
-**Purpose:** Canonical snapshot for recovery and continuity
-
-**Contents:**
-
-- Project overview and tech stack
-- Current readiness by platform (Web/PWA: READY, Android TWA: PWA-ready, iOS: Not started)
-- What is COMPLETE (API contract, caching, performance, PWA icons, offline UX, tests)
-- What is BLOCKED (HTTPS certificate, Play Console submission)
-- What is NEXT (ordered list: commit PWA fixes, Android TWA scaffolding, HTTPS, Play Console)
-- Non-negotiable invariants (timezone, PHP 7.3, API contract v1.0)
-- "How to resume if chat resets" section
-
-**Usage:** Read `PROJECT-STATE.md` first when resuming work after a break or chat reset.
-
----
-
-## 7. TODOs / Follow-ups
-
-### No TODOs Found in Code
-
-✅ No `TODO`, `FIXME`, `XXX`, or `HACK` comments found in codebase
-
-### PWA TODOs (From Audit)
-
-1. Create PWA icon files (192x192, 512x512)
-2. Add maskable icon support
-3. Implement offline error handling
-4. Test offline behavior in browser DevTools
-5. Deploy with HTTPS for production
-
-6. **Performance Optimizations Completed:**
-
-   - ✅ Tides lookup optimized (O(n) → O(1))
-   - ✅ N+1 queries eliminated (21 queries → 1 query)
-   - ✅ Opportunistic cache cleanup implemented
-   - ✅ Forecast-level caching implemented
-
-7. **Potential Future Optimizations (from analysis docs):**
-
-   - Consider combining weather/sun API calls into single request (currently 2 separate calls)
-   - Consider request deduplication for concurrent API calls
-   - Consider stale cache fallback for API failures
-   - Consider adding retry logic with exponential backoff for API calls
-
-8. **Documentation:**
-
-   - All analysis documents created and organized
-   - Specification documents reorganized into `/docs/spec/`
-   - Documentation index updated in `/docs/README.md`
-
-9. **Testing:**
-   - All smoke tests passing
-   - Cache functionality verified
-   - Response structure verified
-   - Date correctness verified
-
----
-
-## Summary
-
-**Total Changes:** 23 files changed, 2298 insertions(+), 128 deletions(-)
-
-**Key Achievements:**
-
-- Performance optimizations: Reduced database queries from 21 to 1 per forecast request
-- Cache optimizations: Added forecast-level caching with 15-minute TTL
-- Documentation: Complete reorganization and analysis documentation
-- Contract safety: All API contracts maintained, no breaking changes
-
-**Status:** ✅ All tests passing, no breaking changes, ready for commit
+**Report Generated By:** `scripts/run_checks_and_report.php`
+**To Regenerate:** Run `php scripts/run_checks_and_report.php`

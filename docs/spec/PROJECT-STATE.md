@@ -267,26 +267,44 @@
   - Test Results
   - Build Output
 
-### Step 3: Run smoke_test.php
-- **Purpose:** Verify backend is working correctly
-- **Command:** `php scripts/smoke_test.php`
+### Step 3: Run Automated Checks and Report
+- **Purpose:** Run all checks and generate LAST_RUN_REPORT.md with git info and test results
+- **Command:** `php scripts/run_checks_and_report.php`
+- **What It Does:**
+  - Runs contract verification (`scripts/verify_contract.php`)
+  - Runs smoke tests (`scripts/smoke_test.php`)
+  - Captures git information (branch, commit hash, status, last 5 commits)
+  - Generates `docs/analysis/LAST_RUN_REPORT.md` with all results
+  - Exits with code 0 if all checks pass, non-zero if any fail
 - **Expected Output:**
-  - Health check: PASS
-  - Forecast endpoint: PASS
   - Contract verification: PASS
-  - Summary: All tests passing
+  - Smoke tests: PASS
+  - Report generated successfully
+  - Exit code: 0
 - **If Tests Fail:**
   - Check PHP version: `php -v` (should be 7.3.x)
-  - Check database: `php scripts/smoke_test.php` will show errors
   - Check API server: Ensure `php -S 127.0.0.1:8001 -t .` is running
+  - Review generated report for specific error details
+- **Alternative:** Run individual tests:
+  - `php scripts/smoke_test.php` (includes contract verification)
+  - `php scripts/verify_contract.php` (contract only)
 
 ### Step 4: Verify Local Development Setup
-- **Backend:** `php -S 127.0.0.1:8001 -t .` (from repo root)
+- **Backend:** 
+  - Option A (from repo root): `php -S 127.0.0.1:8001 -t .` → endpoints at `/api/health.php`
+  - Option B (from api dir): `php -S 127.0.0.1:8001 -t api` → endpoints at `/health.php`
 - **Frontend:** `cd app && npm run dev` (Vite dev server on port 3000)
-- **Test URLs:**
+- **Test URLs (Option A - repo root):**
   - Health: http://127.0.0.1:8001/api/health.php
   - Forecast: http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7
-  - Frontend: http://localhost:3000
+- **Test URLs (Option B - api dir):**
+  - Health: http://127.0.0.1:8001/health.php
+  - Forecast: http://127.0.0.1:8001/forecast.php?lat=-37.8&lng=144.9&days=7
+- **Frontend:** http://localhost:3000
+- **Scripts Auto-Detection:** Test scripts automatically detect the correct base path (`""` or `"/api"`) by probing `/health.php`
+- **Environment Variables (optional):**
+  - `FISHINGINSIGHTS_BASE_URL` - Override base URL (default: `http://127.0.0.1:8001`)
+  - `FISHINGINSIGHTS_BASE_PATH` - Override base path (default: auto-detected, or `""` or `"/api"`)
 
 ### Step 5: Check Documentation Index
 - **Location:** `docs/README.md`

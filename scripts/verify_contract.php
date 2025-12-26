@@ -6,9 +6,33 @@
  * Verifies that /api/forecast.php response matches the contract specification.
  */
 
-$apiBase = 'http://127.0.0.1:8001';
+// Configuration: BASE_URL and BASE_PATH
+$baseUrl = getenv('FISHINGINSIGHTS_BASE_URL') ?: 'http://127.0.0.1:8001';
+$basePath = getenv('FISHINGINSIGHTS_BASE_PATH') ?: '';
+
+// Auto-detect base path if not set
+if (empty($basePath)) {
+    // Try health.php at root first
+    $healthUrlRoot = $baseUrl . '/health.php';
+    $healthResponse = @file_get_contents($healthUrlRoot);
+    if ($healthResponse !== false) {
+        $basePath = ''; // Root path works
+    } else {
+        // Try /api path
+        $healthUrlApi = $baseUrl . '/api/health.php';
+        $healthResponse = @file_get_contents($healthUrlApi);
+        if ($healthResponse !== false) {
+            $basePath = '/api'; // /api path works
+        }
+        // If both fail, default to /api (original behavior)
+        if ($healthResponse === false) {
+            $basePath = '/api';
+        }
+    }
+}
+
 $goldenFile = __DIR__ . '/../tests/golden/forecast.sample.json';
-$testUrl = $apiBase . '/api/forecast.php?lat=-37.8&lng=144.9&days=7';
+$testUrl = $baseUrl . $basePath . '/forecast.php?lat=-37.8&lng=144.9&days=7';
 
 $passed = 0;
 $failed = 0;

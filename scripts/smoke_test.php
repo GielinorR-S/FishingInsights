@@ -8,17 +8,43 @@
  * - Forecast endpoint
  */
 
-$apiBase = 'http://127.0.0.1:8001';
+// Configuration: BASE_URL and BASE_PATH
+$baseUrl = getenv('FISHINGINSIGHTS_BASE_URL') ?: 'http://127.0.0.1:8001';
+$basePath = getenv('FISHINGINSIGHTS_BASE_PATH') ?: '';
+
+// Auto-detect base path if not set
+if (empty($basePath)) {
+    // Try health.php at root first
+    $healthUrlRoot = $baseUrl . '/health.php';
+    $healthResponse = @file_get_contents($healthUrlRoot);
+    if ($healthResponse !== false) {
+        $basePath = ''; // Root path works
+    } else {
+        // Try /api path
+        $healthUrlApi = $baseUrl . '/api/health.php';
+        $healthResponse = @file_get_contents($healthUrlApi);
+        if ($healthResponse !== false) {
+            $basePath = '/api'; // /api path works
+        }
+        // If both fail, default to /api (original behavior)
+        if ($healthResponse === false) {
+            $basePath = '/api';
+        }
+    }
+}
+
 $passed = 0;
 $failed = 0;
 $errors = [];
 
 echo "FishingInsights Backend Smoke Test\n";
-echo "====================================\n\n";
+echo "====================================\n";
+echo "Base URL: {$baseUrl}\n";
+echo "Base Path: " . ($basePath ?: '(root)') . "\n\n";
 
 // Test 1: Health Check
 echo "Test 1: Health Check...\n";
-$healthUrl = $apiBase . '/api/health.php';
+$healthUrl = $baseUrl . $basePath . '/health.php';
 $healthResponse = @file_get_contents($healthUrl);
 
 if ($healthResponse === false) {
@@ -67,7 +93,7 @@ if ($healthResponse === false) {
 
 // Test 2: Forecast Endpoint
 echo "Test 2: Forecast Endpoint...\n";
-$forecastUrl = $apiBase . '/api/forecast.php?lat=-37.8&lng=144.9&days=7';
+$forecastUrl = $baseUrl . $basePath . '/forecast.php?lat=-37.8&lng=144.9&days=7';
 $forecastResponse = @file_get_contents($forecastUrl);
 
 if ($forecastResponse === false) {
