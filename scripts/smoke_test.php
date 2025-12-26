@@ -120,6 +120,43 @@ if ($forecastResponse === false) {
     echo "\n";
 }
 
+// Test 3: API Contract Verification
+echo "Test 3: API Contract Verification...\n";
+$verifyScript = __DIR__ . '/verify_contract.php';
+if (!file_exists($verifyScript)) {
+    $failed++;
+    $errors[] = "Contract verification script not found: $verifyScript";
+    echo "  FAIL: Script not found\n\n";
+} else {
+    $output = [];
+    $returnVar = 0;
+    exec("php \"$verifyScript\" 2>&1", $output, $returnVar);
+    
+    if ($returnVar === 0) {
+        $passed++;
+        echo "  PASS: Contract verification passed\n";
+        // Show last few lines of output
+        $lastLines = array_slice($output, -3);
+        foreach ($lastLines as $line) {
+            if (trim($line) !== '') {
+                echo "  " . $line . "\n";
+            }
+        }
+    } else {
+        $failed++;
+        $errors[] = "Contract verification failed (exit code: $returnVar)";
+        echo "  FAIL: Contract verification failed\n";
+        // Show last few lines of output
+        $lastLines = array_slice($output, -5);
+        foreach ($lastLines as $line) {
+            if (trim($line) !== '') {
+                echo "  " . $line . "\n";
+            }
+        }
+    }
+    echo "\n";
+}
+
 // Summary
 echo "====================================\n";
 echo "Summary: $passed passed, $failed failed\n\n";
