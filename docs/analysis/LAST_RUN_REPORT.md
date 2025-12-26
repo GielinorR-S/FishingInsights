@@ -1,7 +1,7 @@
 # Last Run Report
 
 **Generated:** 2025-12-26  
-**Generated At:** 2025-12-26 01:51:08  
+**Generated At:** 2025-12-26 01:52:58  
 **Status:** ✅ All checks passed
 
 ---
@@ -17,30 +17,26 @@ main
 ### Latest Commit Hash
 
 ```
-c779f4452cf5c91210820d1b24c2523ee624b684
+8b5acd5109cce7530db908aebf1b06463aaa5af4
 ```
 
 ### Short Hash
 
 ```
-c779f44
+8b5acd5
 ```
 
 ### Working Directory Status
 
-⚠️ **Dirty** - Uncommitted changes detected
-
-**Changed/Untracked Files:**
-
-- `??` `scripts/run_checks_and_report.php`
+✅ **Clean** - No uncommitted changes
 
 ### Last 5 Commits
 
+- `8b5acd5 - Fix scripts base URL/path (support / and /api) + update docs`
 - `c779f44 - PWA icons + maskable, offline UX, docs state update`
 - `cc21792 - API contract lock, golden sample, contract verification, perf + cache complete`
 - `aef3952 - Perf + cache optimisations, forecast cache, docs reorg, tests passing`
 - `5ceb1e0 - Day 1-3 baseline: API + seeded data + app running locally`
-- `d17882d - WIP: local dev baseline (API + PWA scaffold)`
 
 ## 2. Test Results
 
