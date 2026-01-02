@@ -1,4 +1,71 @@
-const API_BASE = '/api'
+// Get API base URL and path from environment (defaults to relative /api)
+// Using type assertion to avoid TypeScript errors with import.meta.env
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || ''
+const API_BASE_PATH = (import.meta as any).env?.VITE_API_BASE_PATH || '/api'
+const API_BASE = API_BASE_URL + API_BASE_PATH
+
+/**
+ * Typed API error object
+ */
+export interface ApiError {
+  message: string
+  url: string
+  status?: number
+  statusText?: string
+  isNetworkError: boolean
+}
+
+/**
+ * Centralized API call function with error handling
+ * Uses relative URLs in dev (proxied by Vite) or absolute URLs if API_BASE_URL is set
+ */
+async function getJson<T>(url: string): Promise<T> {
+  // If URL is already absolute (starts with http), use it as-is
+  // Otherwise, use relative URL directly (will be proxied by Vite in dev)
+  // This ensures /api/locations.php stays as /api/locations.php (not http://localhost:3000/api/locations.php)
+  let finalUrl: string = url.startsWith('http') ? url : url
+  let status: number | undefined
+  let statusText: string | undefined
+  let isNetworkError = false
+
+  try {
+    const response = await fetch(finalUrl)
+    status = response.status
+    statusText = response.statusText
+
+    if (!response.ok) {
+      const error: ApiError = {
+        message: `API error: ${response.status} ${response.statusText}`,
+        url: finalUrl,
+        status: response.status,
+        statusText: response.statusText,
+        isNetworkError: false
+      }
+      throw error
+    }
+
+    return await response.json()
+  } catch (err) {
+    // Check if it's already an ApiError
+    if (err && typeof err === 'object' && 'isNetworkError' in err) {
+      throw err
+    }
+
+    // Check if it's a network error
+    if (err instanceof TypeError && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+      isNetworkError = true
+    }
+
+    const error: ApiError = {
+      message: err instanceof Error ? err.message : 'Unknown error occurred',
+      url: finalUrl || url,
+      status,
+      statusText,
+      isNetworkError
+    }
+    throw error
+  }
+}
 
 export interface Location {
   id: number
@@ -6,6 +73,8 @@ export interface Location {
   region: string | null
   lat: number
   lng: number
+  type?: string
+  access?: string
 }
 
 export interface ForecastResponse {
@@ -98,7 +167,7 @@ function getTodayInMelbourne(): string {
   return formatter.format(now)
 }
 
-export async function getForecast(lat: number, lng: number, days: number = 7, start?: string): Promise<ForecastResponse> {
+export async function getForecast(lat: number, lng: number, days: number = 7, start?: string, targetSpecies?: string[]): Promise<ForecastResponse> {
   const params = new URLSearchParams({
     lat: lat.toString(),
     lng: lng.toString(),
@@ -110,12 +179,12 @@ export async function getForecast(lat: number, lng: number, days: number = 7, st
   } else {
     params.append('start', getTodayInMelbourne())
   }
-
-  const response = await fetch(`${API_BASE}/forecast.php?${params}`)
-  if (!response.ok) {
-    throw new Error(`API error: ${response.status}`)
+  // Add target species if provided
+  if (targetSpecies && targetSpecies.length > 0) {
+    params.append('target_species', targetSpecies.join(','))
   }
-  return response.json()
+
+  return getJson<ForecastResponse>(`${API_BASE}/forecast.php?${params}`)
 }
 
 export interface HealthResponse {
@@ -131,11 +200,7 @@ export interface HealthResponse {
 }
 
 export async function getHealth(): Promise<HealthResponse> {
-  const response = await fetch(`${API_BASE}/health.php`)
-  if (!response.ok) {
-    throw new Error(`Health check failed: ${response.status}`)
-  }
-  return response.json()
+  return getJson<HealthResponse>(`${API_BASE}/health.php`)
 }
 
 export interface LocationsResponse {
@@ -149,6 +214,8 @@ export interface LocationsResponse {
       lat: number
       lng: number
       timezone: string
+      type?: string
+      access?: string
     }>
   }
 }
@@ -159,11 +226,7 @@ export async function getLocations(search?: string, region?: string): Promise<Lo
   if (region) params.append('region', region)
   
   const url = `${API_BASE}/locations.php${params.toString() ? '?' + params.toString() : ''}`
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Locations API error: ${response.status}`)
-  }
-  return response.json()
+  return getJson<LocationsResponse>(url)
 }
 
 // Helper to extract Location[] from LocationsResponse
@@ -173,7 +236,71 @@ export function extractLocations(response: LocationsResponse): Location[] {
     name: loc.name,
     region: loc.region || null,
     lat: loc.lat,
-    lng: loc.lng
+    lng: loc.lng,
+    type: loc.type,
+    access: loc.access
   }))
+}
+
+export interface Species {
+  id: number
+  name: string
+  common_name: string
+  state: string
+  region: string | null
+  seasonality: string | null
+  methods: string | null
+  notes: string | null
+}
+
+export interface SpeciesResponse {
+  error: boolean
+  data: {
+    timezone: string
+    species: Species[]
+  }
+}
+
+export async function getSpecies(state?: string, region?: string, search?: string): Promise<SpeciesResponse> {
+  const params = new URLSearchParams()
+  if (state) params.append('state', state)
+  if (region) params.append('region', region)
+  if (search) params.append('q', search)
+  
+  const url = `${API_BASE}/species.php${params.toString() ? '?' + params.toString() : ''}`
+  return getJson<SpeciesResponse>(url)
+}
+
+export interface TodaysBestLocation {
+  id: number
+  name: string
+  region: string
+  lat: number
+  lng: number
+  score: number
+  why: string
+}
+
+export interface TodaysBestResponse {
+  error: boolean
+  data: {
+    date: string
+    timezone: string
+    locations: TodaysBestLocation[]
+    cached: boolean
+    cached_at?: string
+  }
+}
+
+export async function getTodaysBest(state: string = 'VIC', region?: string, limit: number = 5, speciesId?: string): Promise<TodaysBestResponse> {
+  const params = new URLSearchParams({
+    state,
+    limit: limit.toString()
+  })
+  if (region) params.append('region', region)
+  if (speciesId) params.append('species_id', speciesId)
+  
+  const url = `${API_BASE}/todays_best.php?${params.toString()}`
+  return getJson<TodaysBestResponse>(url)
 }
 

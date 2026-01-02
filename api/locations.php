@@ -39,7 +39,7 @@ try {
     }
     
     // Build query
-    $sql = "SELECT id, name, region, latitude, longitude, timezone, description FROM locations WHERE 1=1";
+    $sql = "SELECT id, name, region, latitude, longitude, timezone, description, type, access FROM locations WHERE 1=1";
     $params = [];
     
     // Search filter
@@ -62,9 +62,30 @@ try {
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    /**
+     * Generate unique key for de-duplication
+     */
+    $getLocationUniqueKey = function($name, $region, $lat, $lng) {
+        $normalizedName = strtolower(trim($name));
+        $normalizedName = preg_replace('/\s+/', ' ', $normalizedName);
+        $roundedLat = round((float)$lat, 4);
+        $roundedLng = round((float)$lng, 4);
+        return $normalizedName . '|' . strtolower(trim($region)) . '|' . $roundedLat . '|' . $roundedLng;
+    };
+    
+    // De-duplicate locations using unique key (safety net)
+    $seenKeys = [];
     $locations = [];
     foreach ($rows as $row) {
-        $locations[] = [
+        $key = $getLocationUniqueKey($row['name'], $row['region'], $row['latitude'], $row['longitude']);
+        
+        // Skip if we've already seen this unique key (keep first occurrence)
+        if (isset($seenKeys[$key])) {
+            continue;
+        }
+        $seenKeys[$key] = true;
+        
+        $location = [
             'id' => (int)$row['id'],
             'name' => $row['name'],
             'region' => $row['region'],
@@ -72,6 +93,16 @@ try {
             'lng' => (float)$row['longitude'],
             'timezone' => $row['timezone'] ?: $timezone
         ];
+        
+        // Add optional fields if they exist
+        if (isset($row['type']) && $row['type'] !== null) {
+            $location['type'] = $row['type'];
+        }
+        if (isset($row['access']) && $row['access'] !== null) {
+            $location['access'] = $row['access'];
+        }
+        
+        $locations[] = $location;
     }
     
     sendJson([

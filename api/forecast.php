@@ -39,6 +39,13 @@ try {
     $days = Validator::validateDays($_GET['days'] ?? 7);
     $start = Validator::validateDate($_GET['start'] ?? null);
     
+    // Optional: target species (comma-separated list of species IDs)
+    $targetSpecies = [];
+    if (isset($_GET['target_species']) && !empty($_GET['target_species'])) {
+        $targetSpeciesRaw = trim($_GET['target_species']);
+        $targetSpecies = array_filter(array_map('trim', explode(',', $targetSpeciesRaw)));
+    }
+    
     if ($lat === false || $lng === false) {
         sendError('Invalid latitude or longitude. Both are required.', 'VALIDATION_ERROR', [], 400);
     }
@@ -204,8 +211,9 @@ try {
         // Get recommended species (using cached rules)
         $recommendedSpecies = getRecommendedSpecies($allSpeciesRules, $weather, $tides);
 
-        // Get gear suggestions (from cached gear index)
-        $gearSuggestions = getGearSuggestions($gearIndex, $recommendedSpecies);
+        // Get gear suggestions - prioritize target species if provided
+        $speciesForGear = !empty($targetSpecies) ? $targetSpecies : ($recommendedSpecies && !empty($recommendedSpecies) ? [$recommendedSpecies[0]['id']] : []);
+        $gearSuggestions = getGearSuggestions($db, $gearIndex, $speciesForGear, $recommendedSpecies);
 
         // Generate reasons (always return 2-4 reasons)
         $reasons = generateReasons($weatherScore, $tideScore, $dawnDuskScore, $seasonalityScore, $weather, $tides, $sun, $tidesData);
@@ -410,41 +418,119 @@ function getRecommendedSpecies($allSpeciesRules, $weather, $tides) {
     return array_slice($result, 0, 3);
 }
 
-function getGearSuggestions($gearIndex, $species) {
-    if (empty($species)) {
-        return [
-            'bait' => [],
-            'lure' => [],
-            'line_weight' => '8-15lb',
-            'leader' => '10-20lb',
-            'rig' => 'paternoster or running sinker'
-        ];
-    }
-
-    // Get gear from cached gear index (optimization: avoid query in loop)
-    $speciesId = $species[0]['id'];
-    $gear = isset($gearIndex[$speciesId]) ? $gearIndex[$speciesId] : null;
-
-    if ($gear) {
-        $bait = $gear['gear_bait'] ? array_map('trim', explode(',', $gear['gear_bait'])) : [];
-        $lure = $gear['gear_lure'] ? array_map('trim', explode(',', $gear['gear_lure'])) : [];
-        
-        return [
-            'bait' => $bait,
-            'lure' => $lure,
-            'line_weight' => $gear['gear_line_weight'] ?: '8-15lb',
-            'leader' => $gear['gear_leader'] ?: '10-20lb',
-            'rig' => $gear['gear_rig'] ?: 'paternoster or running sinker'
-        ];
-    }
-
-    return [
+function getGearSuggestions($db, $gearIndex, $targetSpeciesIds, $recommendedSpecies) {
+    // Default fallback
+    $defaultGear = [
         'bait' => [],
         'lure' => [],
         'line_weight' => '8-15lb',
         'leader' => '10-20lb',
-        'rig' => 'paternoster or running sinker'
+        'rig' => 'paternoster or running sinker',
+        'tackle' => []
     ];
+
+    // Determine which species to use for tackle recommendations
+    $speciesIdsToUse = [];
+    if (!empty($targetSpeciesIds)) {
+        // Use target species if provided
+        $speciesIdsToUse = $targetSpeciesIds;
+    } elseif (!empty($recommendedSpecies) && isset($recommendedSpecies[0]['id'])) {
+        // Fall back to recommended species
+        $speciesIdsToUse = [$recommendedSpecies[0]['id']];
+    } else {
+        // No species available, return default
+        return $defaultGear;
+    }
+
+    // Load tackle items for target species from database
+    $tackleItems = [];
+    if (!empty($speciesIdsToUse)) {
+        $placeholders = implode(',', array_fill(0, count($speciesIdsToUse), '?'));
+        $stmt = $db->prepare("
+            SELECT ti.id, ti.name, ti.category, ti.notes, st.priority
+            FROM tackle_items ti
+            INNER JOIN species_tackle st ON ti.id = st.tackle_item_id
+            WHERE st.species_id IN ($placeholders)
+            ORDER BY st.species_id, st.priority, ti.name
+        ");
+        $stmt->execute($speciesIdsToUse);
+        $tackleRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Group by category and priority
+        foreach ($tackleRows as $row) {
+            $category = $row['category'];
+            $priority = (int)$row['priority'];
+            if (!isset($tackleItems[$category])) {
+                $tackleItems[$category] = [];
+            }
+            if (!isset($tackleItems[$category][$priority])) {
+                $tackleItems[$category][$priority] = [];
+            }
+            $tackleItems[$category][$priority][] = [
+                'name' => $row['name'],
+                'notes' => $row['notes']
+            ];
+        }
+    }
+
+    // Get legacy gear from species_rules (for backward compatibility)
+    $legacyGear = null;
+    $primarySpeciesId = $speciesIdsToUse[0];
+    if (isset($gearIndex[$primarySpeciesId])) {
+        $legacyGear = $gearIndex[$primarySpeciesId];
+    }
+
+    // Build response - prioritize tackle items, fall back to legacy gear
+    $result = [
+        'bait' => [],
+        'lure' => [],
+        'line_weight' => $legacyGear['gear_line_weight'] ?? '8-15lb',
+        'leader' => $legacyGear['gear_leader'] ?? '10-20lb',
+        'rig' => $legacyGear['gear_rig'] ?? 'paternoster or running sinker',
+        'tackle' => []
+    ];
+
+    // Extract bait from tackle items (priority 1 items)
+    if (isset($tackleItems['bait'][1])) {
+        $result['bait'] = array_column($tackleItems['bait'][1], 'name');
+    } elseif ($legacyGear && $legacyGear['gear_bait']) {
+        $result['bait'] = array_map('trim', explode(',', $legacyGear['gear_bait']));
+    }
+
+    // Extract lures from tackle items (soft_plastics, metal_lures, poppers, hardbody_lures, squid_jigs)
+    $lureCategories = ['soft_plastics', 'metal_lures', 'poppers', 'hardbody_lures', 'squid_jigs'];
+    foreach ($lureCategories as $cat) {
+        if (isset($tackleItems[$cat][1])) {
+            $result['lure'] = array_merge($result['lure'], array_column($tackleItems[$cat][1], 'name'));
+        }
+    }
+    if (empty($result['lure']) && $legacyGear && $legacyGear['gear_lure']) {
+        $result['lure'] = array_map('trim', explode(',', $legacyGear['gear_lure']));
+    }
+
+    // Build tackle array by category (for frontend display)
+    foreach ($tackleItems as $category => $priorities) {
+        $categoryItems = [];
+        // Flatten priorities (1 = essential, 2 = recommended, 3 = optional)
+        ksort($priorities);
+        foreach ($priorities as $priority => $items) {
+            foreach ($items as $item) {
+                $categoryItems[] = [
+                    'name' => $item['name'],
+                    'priority' => $priority,
+                    'notes' => $item['notes']
+                ];
+            }
+        }
+        if (!empty($categoryItems)) {
+            $result['tackle'][] = [
+                'category' => $category,
+                'items' => $categoryItems
+            ];
+        }
+    }
+
+    return $result;
 }
 
 function generateReasons($weatherScore, $tideScore, $dawnDuskScore, $seasonalityScore, $weather, $tides, $sun, $tidesData = null) {

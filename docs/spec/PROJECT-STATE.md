@@ -2,7 +2,7 @@
 
 **Last Updated:** 2025-12-26  
 **Purpose:** Canonical snapshot for recovery and continuity  
-**Status:** MVP Complete, Android TWA Ready (HTTPS Pending)
+**Status:** MVP Complete, Production-Ready, Android TWA Ready (HTTPS Pending)
 
 ---
 
@@ -116,10 +116,17 @@
 - **Refresh bypass:** `?refresh=true` parameter
 
 ### ✅ Performance Optimizations
-- **Tides lookup:** O(n) → O(1) via date-keyed index
-- **N+1 queries eliminated:** Species rules loaded once per request (21 queries → 1 query)
-- **Gear suggestions:** In-memory index for O(1) lookup
-- **Result:** ~95% reduction in database queries per forecast request
+- **Backend Performance:**
+  - **Tides lookup:** O(n) → O(1) via date-keyed index
+  - **N+1 queries eliminated:** Species rules loaded once per request (21 queries → 1 query)
+  - **Gear suggestions:** In-memory index for O(1) lookup
+  - **Result:** ~95% reduction in database queries per forecast request
+- **Frontend Performance:**
+  - **Memoized expensive renders:** Forecast day cards use `day.date` as key, location/starred state memoized
+  - **Request deduplication:** Prevents duplicate API calls for same location/date combination
+  - **Debounced search:** 300ms debounce on Locations page search input
+  - **Memoized filtering/sorting:** Locations list filtered/sorted only when dependencies change
+  - **Result:** Smoother UI interactions, reduced unnecessary re-renders and API calls
 
 ### ✅ PWA Icons + Maskable
 - **Icons created:**
@@ -137,6 +144,21 @@
 - **Retry functionality:** Retry button when connection restored
 - **Network error detection:** Distinguishes network errors from API errors
 
+### ✅ Visual Polish & Design System
+- **Consistent iconography:** Reusable icon components (`app/src/components/icons.tsx`)
+  - All inline SVGs replaced with consistent icon components
+  - Icons: Home, MapPin, Info, Star, ChevronRight, Refresh, Search, X, Offline, AlertCircle, BarChart
+  - Supports `className` and `size` props for flexibility
+- **Improved spacing & typography:**
+  - Enhanced line-heights (1.6 for body, 1.3 for titles)
+  - Improved letter-spacing for headings (-0.02em titles, 0.08-0.1em section headings)
+  - Consistent spacing scale using CSS variables
+- **BottomNav enhancements:**
+  - Active state: Scale transform (110%), indicator dot, font weight change
+  - Safe area padding: iOS notch/home indicator support via `env(safe-area-inset-bottom)`
+  - Smooth transitions and hover states
+- **Mobile-first design:** Consistent card styles, badges, banners, buttons across all pages
+
 ### ✅ Smoke Tests + Contract Verification
 - **Smoke test:** `scripts/smoke_test.php`
   - Tests `/api/health.php` (status, PDO, write permissions)
@@ -146,73 +168,100 @@
   - Validates against `tests/golden/forecast.sample.json`
   - Checks required keys, types, score range, date correctness
   - Exit code 0 on pass, non-zero on fail
+- **Automated reporting:** `scripts/run_checks_and_report.php`
+  - Runs all checks and generates `docs/analysis/LAST_RUN_REPORT.md`
+  - Captures git info (branch, commit, status, recent commits)
+  - Exits non-zero if any check fails
 
 ---
 
 ## What is BLOCKED
 
-### ⚠️ Production Domain + HTTPS Certificate
-- **Requirement:** HTTPS mandatory for Android TWA production
+### 🔴 Production Domain + HTTPS Certificate
+- **Requirement:** HTTPS mandatory for Android TWA production and PWA installation
 - **Current State:** Development uses HTTP (localhost:3000, 127.0.0.1:8001)
 - **Options:**
-  1. Temporary HTTPS for testing (e.g., ngrok, localtunnel)
-  2. Final domain + SSL certificate (Let's Encrypt, commercial)
-- **Impact:** Blocks Android TWA production deployment
-- **Priority:** High (required for TWA)
+  1. **Temporary HTTPS for testing:** Use ngrok, localtunnel, or similar for TWA testing
+  2. **Final domain + SSL certificate:** Let's Encrypt (free) or commercial certificate
+- **Impact:** 
+  - Blocks Android TWA production deployment
+  - Blocks PWA installation on non-localhost
+  - Service workers require HTTPS (except localhost)
+- **Priority:** **CRITICAL** (required for production deployment)
+- **Next Action:** Choose approach (temporary for testing OR final domain setup)
 
-### ⚠️ Google Play Console Submission
-- **Requirement:** Android TWA project + APK/AAB upload
+### 🔴 Google Play Console Testing & Submission
+- **Requirement:** Android TWA project + APK/AAB upload + Play Console setup
 - **Current State:** PWA ready, Android project not scaffolded
 - **Dependencies:**
-  - HTTPS certificate (see above)
-  - Android TWA project scaffolding
-  - TWA asset links verification
+  1. HTTPS certificate (see above) - **BLOCKER**
+  2. Android TWA project scaffolding (not started)
+  3. TWA asset links verification (Digital Asset Links JSON)
+  4. Google Play Console account setup
 - **Impact:** Blocks Play Store distribution
-- **Priority:** Medium (after HTTPS)
+- **Priority:** **HIGH** (after HTTPS)
+- **Testing Track Options:**
+  - Internal testing (up to 100 testers)
+  - Closed testing (specific testers)
+  - Open testing (public beta)
 
 ---
 
 ## What is NEXT (Ordered)
 
-### 1. Commit & Push Latest PWA Fixes
-- **Status:** PWA blockers fixed, ready to commit
+### 1. Commit & Push Latest Changes
+- **Status:** Performance optimizations and visual polish complete, ready to commit
 - **Files Changed:**
-  - `app/public/pwa-*.png` (3 icon files)
-  - `app/vite.config.ts` (maskable icon)
-  - `app/src/pages/Forecast.tsx` (offline UX)
-  - `app/scripts/generate-icons.js` (new)
-  - `app/package.json` (sharp dependency)
-  - `docs/spec/PWA-REQUIREMENTS.md` (status updated)
-  - `docs/analysis/LAST_RUN_REPORT.md` (findings updated)
-- **Action:** Commit with message "PWA: Add icons, maskable icon, offline UX"
+  - `app/src/components/icons.tsx` (new - consistent iconography)
+  - `app/src/components/BottomNav.tsx` (active state, safe area)
+  - `app/src/pages/Forecast.tsx` (performance: memoization, request deduplication)
+  - `app/src/pages/Locations.tsx` (performance: debounced search, memoized filtering)
+  - `app/src/pages/Home.tsx` (icon consistency)
+  - `app/src/index.css` (spacing, typography improvements)
+  - `app/src/App.tsx` (safe area padding)
+  - `docs/spec/PROJECT-STATE.md` (this file - updated)
+- **Action:** Commit with message "Performance: memoization, debouncing, visual polish"
 
-### 2. Android TWA Project Scaffolding
+### 2. Production Domain + HTTPS Certificate (CRITICAL BLOCKER)
+- **Status:** Not started - **BLOCKS ALL PRODUCTION DEPLOYMENT**
+- **Options:**
+  - **Option A (Quick Testing):** Use ngrok/localtunnel for temporary HTTPS
+    - Pros: Fast setup, good for TWA testing
+    - Cons: Temporary URL, not suitable for production
+  - **Option B (Production):** Configure final domain with SSL certificate
+    - Pros: Permanent solution, production-ready
+    - Cons: Requires domain purchase/configuration
+- **Recommendation:** 
+  - Start with Option A for Android TWA testing
+  - Move to Option B for production deployment
+- **Action:** Choose approach and configure HTTPS
+- **Dependencies:** None (can proceed immediately)
+
+### 3. Android TWA Project Scaffolding
 - **Status:** Not started
 - **Tasks:**
   - Create Android Studio project
-  - Configure TWA (Trusted Web Activity)
-  - Set up asset links (Digital Asset Links)
+  - Configure TWA (Trusted Web Activity) using `android-browser-helper`
+  - Set up asset links (Digital Asset Links JSON at `/.well-known/assetlinks.json`)
   - Test TWA on device/emulator
-- **Documentation:** Follow Android TWA setup guide
+  - Verify PWA loads correctly in TWA
+- **Documentation:** Follow [Android TWA setup guide](https://developer.chrome.com/docs/android/trusted-web-activity/)
 - **Dependencies:** HTTPS certificate (can use temporary for testing)
+- **Priority:** High (after HTTPS setup)
 
-### 3. Temporary HTTPS for Testing OR Final Domain + SSL
-- **Status:** Not started
-- **Options:**
-  - **Option A (Quick Testing):** Use ngrok/localtunnel for temporary HTTPS
-  - **Option B (Production):** Configure final domain with SSL certificate
-- **Recommendation:** Start with Option A for TWA testing, then Option B for production
-- **Action:** Choose approach and configure
-
-### 4. Play Console Upload (Testing Track)
+### 4. Play Console Setup & Testing Track Upload
 - **Status:** Not started
 - **Tasks:**
   - Create Google Play Console account (if needed)
   - Create app listing (draft)
   - Upload TWA APK/AAB to internal testing track
-  - Test with internal testers
+  - Test with internal testers (up to 100)
+  - Verify TWA behavior on real devices
   - Promote to closed/open testing (if desired)
-- **Dependencies:** Android TWA project + HTTPS
+- **Dependencies:** 
+  - Android TWA project (step 3)
+  - HTTPS certificate (step 2)
+- **Priority:** Medium (after TWA project scaffolding)
 
 ---
 
@@ -247,16 +296,65 @@
 
 ---
 
+## NEW CHAT HANDOFF
+
+### Quick Start
+1. **Read this file** (`docs/spec/PROJECT-STATE.md`) for current state
+2. **Run checks:** `php scripts/run_checks_and_report.php`
+3. **Start local dev:** See "Local Development Setup" below
+
+### Repository Information
+- **Repo URL:** `C:\Users\Cini9\Desktop\Portfolio-2026\FishingInsights`
+- **Current Branch:** `main`
+- **Latest Commit:** `a6caac5` - "UI baseline: mobile-first layout, cards, banners, nav polish"
+- **Status:** Uncommitted changes present (performance + visual polish work)
+
+### Local Development Commands
+- **Backend:** `php -S 127.0.0.1:8001 -t .` (from repo root)
+- **Frontend:** `cd app && npm run dev` (Vite on port 3000)
+- **Test URLs:**
+  - Health: http://127.0.0.1:8001/api/health.php
+  - Forecast: http://127.0.0.1:8001/api/forecast.php?lat=-37.8&lng=144.9&days=7
+  - Frontend: http://localhost:3000
+
+### Check Command
+```bash
+php scripts/run_checks_and_report.php
+```
+- Runs contract verification + smoke tests
+- Generates `docs/analysis/LAST_RUN_REPORT.md`
+- Exit code 0 = all pass, non-zero = failures
+
+### Non-Negotiables
+1. **PHP 7.3.33 compatibility** - No 7.4+ features
+2. **Australia/Melbourne timezone** - All dates/times use this
+3. **API Contract v1.0** - LOCKED, breaking changes require version bump
+4. **Plain PHP backend** - No frameworks, endpoint-per-file
+
+### Files to Upload to New Chat (if needed)
+- `docs/spec/PROJECT-STATE.md` (this file)
+- `docs/analysis/LAST_RUN_REPORT.md` (latest test results)
+- `docs/spec/API-CONTRACT.md` (API specification)
+- `docs/spec/PWA-REQUIREMENTS.md` (PWA status)
+
+### Next Task
+**CRITICAL:** Configure HTTPS certificate (domain/SSL) - **BLOCKS ALL PRODUCTION DEPLOYMENT**
+- Options: Temporary (ngrok/localtunnel) for testing OR final domain + SSL
+- Required for: Android TWA, PWA installation, service workers
+
+---
+
 ## How to Resume if Chat Resets
 
 ### Step 1: Read PROJECT-STATE.md
 - **Purpose:** Understand current project state, what's complete, what's blocked, what's next
-- **Location:** `docs/spec/PROJECT-STATE.md`
+- **Location:** `docs/spec/PROJECT-STATE.md` (this file)
 - **Key Sections:**
   - Current Readiness by Platform
   - What is COMPLETE
   - What is BLOCKED
   - What is NEXT
+  - NEW CHAT HANDOFF (above)
 
 ### Step 2: Read LAST_RUN_REPORT.md
 - **Purpose:** Understand recent changes, files modified, test results
@@ -394,5 +492,5 @@ FishingInsights/
 ---
 
 **Last Updated:** 2025-12-26  
-**Next Review:** After Android TWA scaffolding or major changes
+**Next Review:** After HTTPS configuration or Android TWA scaffolding
 

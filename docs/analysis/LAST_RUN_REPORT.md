@@ -1,7 +1,7 @@
 # Last Run Report
 
 **Generated:** 2025-12-26  
-**Generated At:** 2025-12-26 01:59:23  
+**Generated At:** 2025-12-26 06:53:14  
 **Status:** ✅ All checks passed
 
 ---
@@ -17,26 +17,39 @@ main
 ### Latest Commit Hash
 
 ```
-0710245ca6b6cbd57afab56b7bec1e84dc02e4d8
+a6caac5484d849a85c64992627f8b3d719b6244d
 ```
 
 ### Short Hash
 
 ```
-0710245
+a6caac5
 ```
 
 ### Working Directory Status
 
 ⚠️ **Dirty** - Uncommitted changes detected
 
+**Changed/Untracked Files:**
+
+- `??` `api/species.php`
+- `??` `api/todays_best.php`
+- `??` `app/src/components/ForecastDayCard.tsx`
+- `??` `app/src/components/SpeciesSelector.tsx`
+- `??` `app/src/components/icons.tsx`
+- `??` `app/src/contexts/PreferencesContext.tsx`
+- `??` `app/src/contexts/TargetSpeciesContext.tsx`
+- `??` `data/locations.csv`
+- `??` `scripts/check_location_duplicates.php`
+- `??` `scripts/validate_locations_csv.php`
+
 ### Last 5 Commits
 
+- `a6caac5 - UI baseline: mobile-first layout, cards, banners, nav polish`
 - `0710245 - Update last run report`
 - `8b5acd5 - Fix scripts base URL/path (support / and /api) + update docs`
 - `c779f44 - PWA icons + maskable, offline UX, docs state update`
 - `cc21792 - API contract lock, golden sample, contract verification, perf + cache complete`
-- `aef3952 - Perf + cache optimisations, forecast cache, docs reorg, tests passing`
 
 ## 2. Test Results
 
@@ -120,6 +133,7 @@ All tests passed!
 **Overall Status:** ✅ All checks passed
 
 **Test Results:**
+
 - Contract Verification: ✅ PASS
 - Smoke Tests: ✅ PASS
 

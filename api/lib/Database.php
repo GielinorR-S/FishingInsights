@@ -62,6 +62,7 @@ class Database {
                 );
                 CREATE INDEX IF NOT EXISTS idx_locations_region ON locations(region);
                 CREATE INDEX IF NOT EXISTS idx_locations_coords ON locations(latitude, longitude);
+                -- Note: No UNIQUE constraint to allow flexibility, but seed.php handles duplicates via application logic
             ",
             'species_rules' => "
                 CREATE TABLE IF NOT EXISTS species_rules (
@@ -86,6 +87,47 @@ class Database {
                     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
                 );
                 CREATE INDEX IF NOT EXISTS idx_species_rules_season ON species_rules(season_start_month, season_end_month);
+            ",
+            'species' => "
+                CREATE TABLE IF NOT EXISTS species (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    common_name TEXT,
+                    state TEXT NOT NULL,
+                    region TEXT,
+                    seasonality TEXT,
+                    methods TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_species_state ON species(state);
+                CREATE INDEX IF NOT EXISTS idx_species_region ON species(region);
+            ",
+            'tackle_items' => "
+                CREATE TABLE IF NOT EXISTS tackle_items (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    notes TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_tackle_items_category ON tackle_items(category);
+            ",
+            'species_tackle' => "
+                CREATE TABLE IF NOT EXISTS species_tackle (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    species_id TEXT NOT NULL,
+                    tackle_item_id INTEGER NOT NULL,
+                    priority INTEGER NOT NULL DEFAULT 1,
+                    conditions_json TEXT,
+                    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (tackle_item_id) REFERENCES tackle_items(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_species_tackle_species ON species_tackle(species_id);
+                CREATE INDEX IF NOT EXISTS idx_species_tackle_priority ON species_tackle(species_id, priority);
             ",
             'api_cache' => "
                 CREATE TABLE IF NOT EXISTS api_cache (
